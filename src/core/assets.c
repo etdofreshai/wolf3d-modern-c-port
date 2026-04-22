@@ -631,6 +631,32 @@ bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t p
     return true;
 }
 
+bool wolf_read_map_plane_headers(const char *data_dir, size_t map_index, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size)
+{
+    size_t plane_index;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || headers == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect map plane table");
+        return false;
+    }
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        if (!wolf_read_map_plane_header(data_dir, map_index, plane_index, &headers[plane_index], error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool wolf_load_map_plane_words(const char *data_dir, size_t map_index, size_t plane_index, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size)
 {
     char path[4096];
