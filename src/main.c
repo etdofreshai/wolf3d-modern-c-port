@@ -12,6 +12,69 @@ const char *wolf_port_version(void)
     return WOLF3D_PORT_VERSION;
 }
 
+static int run_carmack_self_test(void)
+{
+    static const uint8_t literal_encoded[] = {
+        0x34, 0x12,
+        0x00, 0xa7, 0x55,
+        0x00, 0xa8, 0x66};
+    static const uint8_t near_copy_encoded[] = {
+        0x11, 0x11,
+        0x22, 0x22,
+        0x02, 0xa7, 0x02};
+    static const uint8_t far_copy_encoded[] = {
+        0xaa, 0xaa,
+        0xbb, 0xbb,
+        0xcc, 0xcc,
+        0x02, 0xa8, 0x00, 0x00};
+    static const uint8_t invalid_near_encoded[] = {
+        0x11, 0x11,
+        0x01, 0xa7, 0x02};
+    uint16_t decoded[5];
+
+    if (!wolf_carmack_expand_bytes(literal_encoded, sizeof(literal_encoded), decoded, 3)
+        || decoded[0] != 0x1234
+        || decoded[1] != 0xa755
+        || decoded[2] != 0xa866)
+    {
+        fputs("carmack literal self-test failed\n", stderr);
+        return 1;
+    }
+    printf("carmack literal ok: %04x %04x %04x\n", decoded[0], decoded[1], decoded[2]);
+
+    if (!wolf_carmack_expand_bytes(near_copy_encoded, sizeof(near_copy_encoded), decoded, 4)
+        || decoded[0] != 0x1111
+        || decoded[1] != 0x2222
+        || decoded[2] != 0x1111
+        || decoded[3] != 0x2222)
+    {
+        fputs("carmack near-copy self-test failed\n", stderr);
+        return 1;
+    }
+    printf("carmack near copy ok: %04x %04x %04x %04x\n", decoded[0], decoded[1], decoded[2], decoded[3]);
+
+    if (!wolf_carmack_expand_bytes(far_copy_encoded, sizeof(far_copy_encoded), decoded, 5)
+        || decoded[0] != 0xaaaa
+        || decoded[1] != 0xbbbb
+        || decoded[2] != 0xcccc
+        || decoded[3] != 0xaaaa
+        || decoded[4] != 0xbbbb)
+    {
+        fputs("carmack far-copy self-test failed\n", stderr);
+        return 1;
+    }
+    printf("carmack far copy ok: %04x %04x %04x %04x %04x\n", decoded[0], decoded[1], decoded[2], decoded[3], decoded[4]);
+
+    if (wolf_carmack_expand_bytes(invalid_near_encoded, sizeof(invalid_near_encoded), decoded, 2))
+    {
+        fputs("carmack invalid near self-test failed\n", stderr);
+        return 1;
+    }
+    puts("carmack invalid near ok");
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int i;
@@ -21,6 +84,7 @@ int main(int argc, char **argv)
     int inspect_first_map = 0;
     int validate_first_map_planes = 0;
     int self_test_rlew = 0;
+    int self_test_carmack = 0;
     int inspect_first_map_plane = 0;
     size_t inspect_first_map_plane_index = 0;
     char error_buffer[256];
@@ -64,6 +128,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-rlew") == 0)
         {
             self_test_rlew = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-carmack") == 0)
+        {
+            self_test_carmack = 1;
             continue;
         }
 
@@ -205,6 +275,11 @@ int main(int argc, char **argv)
         printf("rlew self-test ok: %04x %04x %04x %04x %04x\n",
             decoded[0], decoded[1], decoded[2], decoded[3], decoded[4]);
         return 0;
+    }
+
+    if (self_test_carmack)
+    {
+        return run_carmack_self_test();
     }
 
     if (inspect_first_map_plane)
