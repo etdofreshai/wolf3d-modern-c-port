@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "wolf3d/filesystem.h"
 #include "wolf3d/platform.h"
 #include "wolf3d/port.h"
 
@@ -11,9 +12,48 @@ const char *wolf_port_version(void)
 
 int main(int argc, char **argv)
 {
-    if (argc > 1 && strcmp(argv[1], "--version") == 0)
+    int i;
+    const char *data_path = wolf_default_data_dir();
+    int check_data = 0;
+    char error_buffer[256];
+
+    for (i = 1; i < argc; ++i)
     {
-        puts(wolf_port_version());
+        if (strcmp(argv[i], "--version") == 0)
+        {
+            puts(wolf_port_version());
+            return 0;
+        }
+
+        if (strcmp(argv[i], "--check-data") == 0)
+        {
+            check_data = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--data") == 0)
+        {
+            if ((i + 1) >= argc)
+            {
+                fputs("--data requires a path\n", stderr);
+                return 1;
+            }
+
+            data_path = argv[++i];
+            continue;
+        }
+    }
+
+    if (check_data)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("data path ok: %s\n", data_path);
         return 0;
     }
 

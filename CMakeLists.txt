@@ -8,6 +8,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 add_executable(wolf3d_port
   src/main.c
   src/platform/platform_stub.c
+  src/platform/filesystem.c
 )
 
 target_include_directories(wolf3d_port PRIVATE include)
