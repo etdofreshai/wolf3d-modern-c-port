@@ -408,6 +408,46 @@ bool wolf_map_header_is_valid(const wolf_map_summary *summary)
     return true;
 }
 
+bool wolf_map_dimensions_are_supported(const wolf_map_summary *summary)
+{
+    if (!wolf_map_header_is_valid(summary))
+    {
+        return false;
+    }
+
+    if (summary->width > 64 || summary->height > 64)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool wolf_map_plane_header_is_valid_for_map(const wolf_map_summary *summary, const wolf_map_plane_header *header)
+{
+    size_t expected_words;
+
+    if (!wolf_map_dimensions_are_supported(summary) || header == NULL)
+    {
+        return false;
+    }
+
+    if (header->length < 4
+        || (header->carmack_expanded_bytes % 2) != 0
+        || (header->rlew_expanded_bytes % 2) != 0)
+    {
+        return false;
+    }
+
+    expected_words = (size_t)summary->width * (size_t)summary->height;
+    if (expected_words == 0)
+    {
+        return false;
+    }
+
+    return header->decoded_words == expected_words;
+}
+
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary)
 {
     size_t i;
@@ -555,6 +595,12 @@ bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t p
     }
 
     header->decoded_words = (size_t)(header->rlew_expanded_bytes / 2);
+    if (!wolf_map_plane_header_is_valid_for_map(&summary, header))
+    {
+        set_error(error_buffer, error_buffer_size, "map plane header does not match map dimensions");
+        return false;
+    }
+
     return true;
 }
 
@@ -691,6 +737,12 @@ bool wolf_load_map(const char *data_dir, size_t map_index, wolf_loaded_map *map,
 
     if (!wolf_read_map_summary(data_dir, map_index, &map->summary, error_buffer, error_buffer_size))
     {
+        return false;
+    }
+
+    if (!wolf_map_dimensions_are_supported(&map->summary) || !wolf_map_planes_are_in_bounds(&map->summary))
+    {
+        set_error(error_buffer, error_buffer_size, "map header is invalid");
         return false;
     }
 

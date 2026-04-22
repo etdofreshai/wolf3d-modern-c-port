@@ -135,6 +135,9 @@ int main(int argc, char **argv)
     size_t inspect_map_catalog_count = 0;
     int validate_map_header = 0;
     size_t validate_map_header_index = 0;
+    int validate_map_plane_header = 0;
+    size_t validate_map_plane_header_map_index = 0;
+    size_t validate_map_plane_header_index = 0;
     int validate_first_map_planes = 0;
     int self_test_rlew = 0;
     int self_test_carmack = 0;
@@ -246,6 +249,37 @@ int main(int argc, char **argv)
 
             validate_map_header = 1;
             validate_map_header_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--validate-map-plane-header") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            if ((i + 2) >= argc)
+            {
+                fputs("--validate-map-plane-header requires a map index and plane index\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            if (map_end == argv[i - 1] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--validate-map-plane-header map index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--validate-map-plane-header plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+
+            validate_map_plane_header = 1;
+            validate_map_plane_header_map_index = (size_t)parsed_map_index;
+            validate_map_plane_header_index = (size_t)parsed_plane_index;
             continue;
         }
 
@@ -551,6 +585,38 @@ int main(int argc, char **argv)
         printf("map%zu name: %s\n", validate_map_header_index, map_summary.name);
         printf("map%zu size: %ux%u\n", validate_map_header_index, map_summary.width, map_summary.height);
         return (wolf_map_header_is_valid(&map_summary) && wolf_map_planes_are_in_bounds(&map_summary)) ? 0 : 1;
+    }
+
+    if (validate_map_plane_header)
+    {
+        size_t expected_words;
+        int header_valid;
+        int size_matches;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_map_summary(data_path, validate_map_plane_header_map_index, &map_summary, error_buffer, sizeof(error_buffer))
+            || !wolf_read_map_plane_header(data_path, validate_map_plane_header_map_index, validate_map_plane_header_index, &plane_header, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        expected_words = (size_t)map_summary.width * (size_t)map_summary.height;
+        header_valid = wolf_map_plane_header_is_valid_for_map(&map_summary, &plane_header);
+        size_matches = (plane_header.decoded_words == expected_words);
+
+        printf("map%zu plane%zu header valid: %s\n", validate_map_plane_header_map_index, validate_map_plane_header_index, header_valid ? "yes" : "no");
+        printf("map%zu plane%zu decoded size matches map: %s\n", validate_map_plane_header_map_index, validate_map_plane_header_index, size_matches ? "yes" : "no");
+        printf("map%zu plane%zu expected words: %zu\n", validate_map_plane_header_map_index, validate_map_plane_header_index, expected_words);
+        printf("map%zu plane%zu decoded words: %zu\n", validate_map_plane_header_map_index, validate_map_plane_header_index, plane_header.decoded_words);
+        return (header_valid && size_matches) ? 0 : 1;
     }
 
     if (validate_first_map_planes)

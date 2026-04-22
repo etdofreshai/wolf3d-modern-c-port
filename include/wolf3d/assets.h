@@ -51,6 +51,8 @@ bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summ
 bool wolf_read_map_catalog(const char *data_dir, size_t count, wolf_map_summary *summaries, size_t summaries_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_map_header_is_valid(const wolf_map_summary *summary);
+bool wolf_map_dimensions_are_supported(const wolf_map_summary *summary);
+bool wolf_map_plane_header_is_valid_for_map(const wolf_map_summary *summary, const wolf_map_plane_header *header);
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary);
 bool wolf_first_map_planes_are_in_bounds(const wolf_map_summary *summary);
 bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t plane_index, wolf_map_plane_header *header, char *error_buffer, size_t error_buffer_size);
