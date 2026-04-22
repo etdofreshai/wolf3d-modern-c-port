@@ -189,6 +189,88 @@ static int run_map_helper_self_test(void)
     return 0;
 }
 
+static int run_map_validation_self_test(void)
+{
+    wolf_map_summary valid_summary;
+    wolf_map_plane_header valid_header;
+
+    memset(&valid_summary, 0, sizeof(valid_summary));
+    valid_summary.plane_offsets[0] = 11;
+    valid_summary.plane_offsets[1] = 1445;
+    valid_summary.plane_offsets[2] = 2240;
+    valid_summary.plane_lengths[0] = 1434;
+    valid_summary.plane_lengths[1] = 795;
+    valid_summary.plane_lengths[2] = 10;
+    valid_summary.width = 64;
+    valid_summary.height = 64;
+    memcpy(valid_summary.name, "Wolf1 Map1", sizeof("Wolf1 Map1"));
+
+    memset(&valid_header, 0, sizeof(valid_header));
+    valid_header.offset = valid_summary.plane_offsets[0];
+    valid_header.length = valid_summary.plane_lengths[0];
+    valid_header.carmack_expanded_bytes = 3190;
+    valid_header.rlew_expanded_bytes = 8192;
+    valid_header.decoded_words = 4096;
+
+    if (!wolf_map_header_is_valid(&valid_summary))
+    {
+        fputs("map header valid self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map header valid ok");
+
+    valid_summary.plane_lengths[2] = 0;
+    if (wolf_map_header_is_valid(&valid_summary))
+    {
+        fputs("map header missing-plane self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map header missing plane ok");
+    valid_summary.plane_lengths[2] = 10;
+
+    if (!wolf_map_dimensions_are_supported(&valid_summary))
+    {
+        fputs("map dimensions supported self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map dimensions supported ok");
+
+    valid_summary.width = 65;
+    if (wolf_map_dimensions_are_supported(&valid_summary))
+    {
+        fputs("map dimensions oversized self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map dimensions oversized ok");
+    valid_summary.width = 64;
+
+    if (!wolf_map_plane_header_is_valid_for_map(&valid_summary, &valid_header))
+    {
+        fputs("map plane header valid self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header valid ok");
+
+    valid_header.rlew_expanded_bytes = 8191;
+    if (wolf_map_plane_header_is_valid_for_map(&valid_summary, &valid_header))
+    {
+        fputs("map plane header odd-size self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header odd size ok");
+    valid_header.rlew_expanded_bytes = 8192;
+
+    valid_header.decoded_words = 4095;
+    if (wolf_map_plane_header_is_valid_for_map(&valid_summary, &valid_header))
+    {
+        fputs("map plane header wrong-decoded-size self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header wrong decoded size ok");
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int i;
@@ -210,6 +292,7 @@ int main(int argc, char **argv)
     int self_test_carmack = 0;
     int self_test_decompression_failures = 0;
     int self_test_map_helpers = 0;
+    int self_test_map_validation = 0;
     int inspect_first_map_plane = 0;
     size_t inspect_first_map_plane_index = 0;
     int inspect_map_plane = 0;
@@ -382,6 +465,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-map-helpers") == 0)
         {
             self_test_map_helpers = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-validation") == 0)
+        {
+            self_test_map_validation = 1;
             continue;
         }
 
@@ -788,6 +877,11 @@ int main(int argc, char **argv)
     if (self_test_map_helpers)
     {
         return run_map_helper_self_test();
+    }
+
+    if (self_test_map_validation)
+    {
+        return run_map_validation_self_test();
     }
 
     if (inspect_map_overview)
