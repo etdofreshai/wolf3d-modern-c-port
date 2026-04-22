@@ -212,6 +212,8 @@ static int run_map_validation_self_test(void)
     valid_header.rlew_expanded_bytes = 8192;
     valid_header.decoded_words = 4096;
 
+    valid_summary.gamemaps_file_size = 4096;
+
     if (!wolf_map_header_is_valid(&valid_summary))
     {
         fputs("map header valid self-test failed\n", stderr);
@@ -250,6 +252,38 @@ static int run_map_validation_self_test(void)
         return 1;
     }
     puts("map plane header valid ok");
+
+    if (!wolf_map_plane_header_matches_summary(&valid_summary, 0, &valid_header))
+    {
+        fputs("map plane header summary-match self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header summary match ok");
+
+    if (!wolf_map_plane_header_is_in_bounds(&valid_summary, 0, &valid_header))
+    {
+        fputs("map plane header bounds self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header bounds ok");
+
+    valid_header.offset = valid_summary.plane_offsets[1];
+    if (wolf_map_plane_header_matches_summary(&valid_summary, 0, &valid_header))
+    {
+        fputs("map plane header offset-mismatch self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header offset mismatch ok");
+    valid_header.offset = valid_summary.plane_offsets[0];
+
+    valid_header.length = (uint16_t)(valid_summary.plane_offsets[1] - valid_summary.plane_offsets[0] + 1);
+    if (wolf_map_plane_header_is_in_bounds(&valid_summary, 0, &valid_header))
+    {
+        fputs("map plane header out-of-bounds self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header out of bounds ok");
+    valid_header.length = valid_summary.plane_lengths[0];
 
     valid_header.rlew_expanded_bytes = 8191;
     if (wolf_map_plane_header_is_valid_for_map(&valid_summary, &valid_header))
@@ -891,12 +925,18 @@ int main(int argc, char **argv)
         expected_words = (size_t)map_summary.width * (size_t)map_summary.height;
         header_valid = wolf_map_plane_header_is_valid_for_map(&map_summary, &plane_header);
         size_matches = (plane_header.decoded_words == expected_words);
-
         printf("map%zu plane%zu header valid: %s\n", validate_map_plane_header_map_index, validate_map_plane_header_index, header_valid ? "yes" : "no");
+        printf("map%zu plane%zu summary match: %s\n", validate_map_plane_header_map_index, validate_map_plane_header_index,
+            wolf_map_plane_header_matches_summary(&map_summary, validate_map_plane_header_index, &plane_header) ? "yes" : "no");
+        printf("map%zu plane%zu bounds match: %s\n", validate_map_plane_header_map_index, validate_map_plane_header_index,
+            wolf_map_plane_header_is_in_bounds(&map_summary, validate_map_plane_header_index, &plane_header) ? "yes" : "no");
         printf("map%zu plane%zu decoded size matches map: %s\n", validate_map_plane_header_map_index, validate_map_plane_header_index, size_matches ? "yes" : "no");
         printf("map%zu plane%zu expected words: %zu\n", validate_map_plane_header_map_index, validate_map_plane_header_index, expected_words);
         printf("map%zu plane%zu decoded words: %zu\n", validate_map_plane_header_map_index, validate_map_plane_header_index, plane_header.decoded_words);
-        return (header_valid && size_matches) ? 0 : 1;
+        return (header_valid
+            && wolf_map_plane_header_matches_summary(&map_summary, validate_map_plane_header_index, &plane_header)
+            && wolf_map_plane_header_is_in_bounds(&map_summary, validate_map_plane_header_index, &plane_header)
+            && size_matches) ? 0 : 1;
     }
 
     if (validate_first_map_planes)

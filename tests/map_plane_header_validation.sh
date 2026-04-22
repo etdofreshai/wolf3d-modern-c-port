@@ -20,6 +20,8 @@ OUTPUT="$($BIN --validate-map-plane-header 1 0 --data "$VALID_DATA_DIR")"
 
 for expected in \
   "map1 plane0 header valid: yes" \
+  "map1 plane0 summary match: yes" \
+  "map1 plane0 bounds match: yes" \
   "map1 plane0 decoded size matches map: yes" \
   "map1 plane0 expected words: 4096" \
   "map1 plane0 decoded words: 4096"; do

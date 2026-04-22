@@ -475,6 +475,41 @@ bool wolf_map_plane_header_is_valid_for_map(const wolf_map_summary *summary, con
     return header->decoded_words == expected_words;
 }
 
+bool wolf_map_plane_header_matches_summary(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header)
+{
+    if (!wolf_map_header_is_valid(summary) || header == NULL || plane_index >= 3)
+    {
+        return false;
+    }
+
+    return header->offset == summary->plane_offsets[plane_index]
+        && header->length == summary->plane_lengths[plane_index];
+}
+
+bool wolf_map_plane_header_is_in_bounds(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header)
+{
+    uint64_t plane_end;
+
+    if (!wolf_map_plane_header_matches_summary(summary, plane_index, header)
+        || summary->gamemaps_file_size == 0)
+    {
+        return false;
+    }
+
+    plane_end = (uint64_t)header->offset + (uint64_t)header->length;
+    if (plane_end > summary->gamemaps_file_size)
+    {
+        return false;
+    }
+
+    if (plane_index < 2 && plane_end > summary->plane_offsets[plane_index + 1])
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary)
 {
     size_t i;
