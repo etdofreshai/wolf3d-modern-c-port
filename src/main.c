@@ -376,6 +376,10 @@ int main(int argc, char **argv)
     size_t inspect_map_cell_map_index = 0;
     size_t inspect_map_cell_x = 0;
     size_t inspect_map_cell_y = 0;
+    int inspect_map_row = 0;
+    size_t inspect_map_row_map_index = 0;
+    size_t inspect_map_row_plane_index = 0;
+    size_t inspect_map_row_y = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
@@ -731,6 +735,46 @@ int main(int argc, char **argv)
             inspect_map_cell_map_index = (size_t)parsed_map_index;
             inspect_map_cell_x = (size_t)parsed_x;
             inspect_map_cell_y = (size_t)parsed_y;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-row") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            char *y_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            long parsed_y;
+            if ((i + 3) >= argc)
+            {
+                fputs("--inspect-map-row requires a map index, plane index, and y\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            parsed_y = strtol(argv[++i], &y_end, 10);
+            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-map-row map index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i - 1] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--inspect-map-row plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+            if (y_end == argv[i] || *y_end != '\0' || parsed_y < 0)
+            {
+                fputs("--inspect-map-row y must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_row = 1;
+            inspect_map_row_map_index = (size_t)parsed_map_index;
+            inspect_map_row_plane_index = (size_t)parsed_plane_index;
+            inspect_map_row_y = (size_t)parsed_y;
             continue;
         }
 
@@ -1159,6 +1203,58 @@ int main(int argc, char **argv)
         printf("map%zu cell[%zu,%zu] plane0: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane0_value);
         printf("map%zu cell[%zu,%zu] plane1: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane1_value);
         printf("map%zu cell[%zu,%zu] plane2: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane2_value);
+        return 0;
+    }
+
+    if (inspect_map_row)
+    {
+        const uint16_t *row_words = NULL;
+        size_t row_length = 0;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_map(data_path, inspect_map_row_map_index, &loaded_map, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_row(&loaded_map,
+                inspect_map_row_plane_index,
+                inspect_map_row_y,
+                &row_words,
+                &row_length))
+        {
+            fprintf(stderr,
+                "map row is out of bounds: map=%zu plane=%zu y=%zu\n",
+                inspect_map_row_map_index,
+                inspect_map_row_plane_index,
+                inspect_map_row_y);
+            return 1;
+        }
+
+        printf("map%zu plane%zu row%zu length: %zu\n",
+            inspect_map_row_map_index,
+            inspect_map_row_plane_index,
+            inspect_map_row_y,
+            row_length);
+        printf("map%zu plane%zu row%zu cells: [0]=%u [1]=%u [31]=%u [32]=%u [33]=%u [34]=%u [63]=%u\n",
+            inspect_map_row_map_index,
+            inspect_map_row_plane_index,
+            inspect_map_row_y,
+            row_words[0],
+            row_words[1],
+            row_words[31],
+            row_words[32],
+            row_words[33],
+            row_words[34],
+            row_words[63]);
         return 0;
     }
 

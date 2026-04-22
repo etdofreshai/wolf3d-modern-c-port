@@ -922,6 +922,38 @@ bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, co
     return true;
 }
 
+bool wolf_map_get_row(const wolf_loaded_map *map, size_t plane_index, size_t y, const uint16_t **row_words, size_t *row_length)
+{
+    const uint16_t *words;
+    size_t word_count;
+    size_t row_start;
+
+    if (map == NULL || row_words == NULL || row_length == NULL)
+    {
+        return false;
+    }
+
+    if (!wolf_map_get_plane_words(map, plane_index, &words, &word_count))
+    {
+        return false;
+    }
+
+    if (y >= map->summary.height)
+    {
+        return false;
+    }
+
+    row_start = y * (size_t)map->summary.width;
+    if (row_start >= word_count)
+    {
+        return false;
+    }
+
+    *row_words = words + row_start;
+    *row_length = (size_t)map->summary.width;
+    return true;
+}
+
 bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value)
 {
     size_t index;
