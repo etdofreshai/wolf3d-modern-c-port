@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "wolf3d/assets.h"
 #include "wolf3d/filesystem.h"
 #include "wolf3d/platform.h"
 #include "wolf3d/port.h"
@@ -15,7 +16,9 @@ int main(int argc, char **argv)
     int i;
     const char *data_path = wolf_default_data_dir();
     int check_data = 0;
+    int inspect_maphead = 0;
     char error_buffer[256];
+    wolf_maphead_summary maphead_summary;
 
     for (i = 1; i < argc; ++i)
     {
@@ -28,6 +31,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--check-data") == 0)
         {
             check_data = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-maphead") == 0)
+        {
+            inspect_maphead = 1;
             continue;
         }
 
@@ -54,6 +63,28 @@ int main(int argc, char **argv)
         }
 
         printf("data path ok: %s\n", data_path);
+        return 0;
+    }
+
+    if (inspect_maphead)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_maphead_summary(data_path, &maphead_summary, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("maphead rlew_tag: 0x%04x\n", maphead_summary.rlew_tag);
+        printf("map count: %zu\n", maphead_summary.map_count);
+        printf("first map offset: %u\n", maphead_summary.first_map_offset);
         return 0;
     }
 

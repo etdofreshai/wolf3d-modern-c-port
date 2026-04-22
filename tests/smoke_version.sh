@@ -12,6 +12,7 @@ gcc -std=c17 -Wall -Wextra -Werror \
   "$ROOT/src/main.c" \
   "$ROOT/src/platform/platform_stub.c" \
   "$ROOT/src/platform/filesystem.c" \
+  "$ROOT/src/core/assets.c" \
   -o "$BIN"
 
 OUTPUT="$($BIN --version)"
