@@ -17,8 +17,10 @@ int main(int argc, char **argv)
     const char *data_path = wolf_default_data_dir();
     int check_data = 0;
     int inspect_maphead = 0;
+    int inspect_first_map = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
+    wolf_map_summary map_summary;
 
     for (i = 1; i < argc; ++i)
     {
@@ -37,6 +39,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--inspect-maphead") == 0)
         {
             inspect_maphead = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-first-map") == 0)
+        {
+            inspect_first_map = 1;
             continue;
         }
 
@@ -85,6 +93,31 @@ int main(int argc, char **argv)
         printf("maphead rlew_tag: 0x%04x\n", maphead_summary.rlew_tag);
         printf("map count: %zu\n", maphead_summary.map_count);
         printf("first map offset: %u\n", maphead_summary.first_map_offset);
+        return 0;
+    }
+
+    if (inspect_first_map)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_first_map_summary(data_path, &map_summary, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("first map name: %s\n", map_summary.name);
+        printf("first map size: %ux%u\n", map_summary.width, map_summary.height);
+        printf("first map plane0 offset: %u\n", map_summary.plane_offsets[0]);
+        printf("first map plane1 offset: %u\n", map_summary.plane_offsets[1]);
+        printf("first map plane2 offset: %u\n", map_summary.plane_offsets[2]);
+        printf("first map plane0 length: %u\n", map_summary.plane_lengths[0]);
         return 0;
     }
 
