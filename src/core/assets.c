@@ -769,26 +769,65 @@ bool wolf_load_first_map(const char *data_dir, wolf_loaded_map *map, char *error
     return wolf_load_map(data_dir, 0, map, error_buffer, error_buffer_size);
 }
 
+bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, size_t *index)
+{
+    if (summary == NULL || index == NULL)
+    {
+        return false;
+    }
+
+    if (summary->width == 0 || summary->height == 0 || summary->width > 64 || summary->height > 64)
+    {
+        return false;
+    }
+
+    if (x >= summary->width || y >= summary->height)
+    {
+        return false;
+    }
+
+    *index = (y * (size_t)summary->width) + x;
+    return true;
+}
+
+bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, const uint16_t **words, size_t *word_count)
+{
+    if (map == NULL || words == NULL || word_count == NULL || plane_index >= 3)
+    {
+        return false;
+    }
+
+    if (map->summary.width == 0 || map->summary.height == 0 || map->summary.width > 64 || map->summary.height > 64)
+    {
+        return false;
+    }
+
+    *words = map->plane_words[plane_index];
+    *word_count = (size_t)map->summary.width * (size_t)map->summary.height;
+    return true;
+}
+
 bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value)
 {
     size_t index;
+    const uint16_t *words;
+    size_t word_count;
 
-    if (map == NULL || value == NULL || plane_index >= 3)
+    if (map == NULL || value == NULL)
     {
         return false;
     }
 
-    if (!wolf_map_dimensions_are_supported(&map->summary))
+    if (!wolf_map_get_plane_words(map, plane_index, &words, &word_count))
     {
         return false;
     }
 
-    if (x >= map->summary.width || y >= map->summary.height)
+    if (!wolf_map_cell_index(&map->summary, x, y, &index) || index >= word_count)
     {
         return false;
     }
 
-    index = (y * (size_t)map->summary.width) + x;
-    *value = map->plane_words[plane_index][index];
+    *value = words[index];
     return true;
 }

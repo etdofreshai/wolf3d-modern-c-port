@@ -122,6 +122,73 @@ static int run_decompression_failure_self_test(void)
     return 0;
 }
 
+static int run_map_helper_self_test(void)
+{
+    wolf_loaded_map map;
+    const uint16_t *plane_words = NULL;
+    size_t word_count = 0;
+    size_t index = 0;
+    uint16_t cell_value = 0;
+    size_t i;
+
+    memset(&map, 0, sizeof(map));
+    map.summary.width = 4;
+    map.summary.height = 3;
+    memcpy(map.summary.name, "SelfTest", sizeof("SelfTest"));
+
+    for (i = 0; i < 12; ++i)
+    {
+        map.plane_words[1][i] = (uint16_t)(100 + i);
+    }
+
+    if (!wolf_map_cell_index(&map.summary, 3, 2, &index) || index != 11)
+    {
+        fputs("map helper index self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper index ok: %zu\n", index);
+
+    if (!wolf_map_get_plane_words(&map, 1, &plane_words, &word_count)
+        || word_count != 12
+        || plane_words[0] != 100
+        || plane_words[11] != 111)
+    {
+        fputs("map helper plane self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[11]);
+
+    if (!wolf_map_get_cell(&map, 1, 3, 1, &cell_value) || cell_value != 107)
+    {
+        fputs("map helper cell self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper cell ok: %u\n", cell_value);
+
+    if (wolf_map_cell_index(&map.summary, 4, 0, &index))
+    {
+        fputs("map helper out-of-bounds index self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper oob index ok");
+
+    if (wolf_map_get_cell(&map, 1, 0, 3, &cell_value))
+    {
+        fputs("map helper out-of-bounds cell self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper oob cell ok");
+
+    if (wolf_map_get_plane_words(&map, 3, &plane_words, &word_count))
+    {
+        fputs("map helper invalid-plane self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper invalid plane ok");
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int i;
@@ -142,6 +209,7 @@ int main(int argc, char **argv)
     int self_test_rlew = 0;
     int self_test_carmack = 0;
     int self_test_decompression_failures = 0;
+    int self_test_map_helpers = 0;
     int inspect_first_map_plane = 0;
     size_t inspect_first_map_plane_index = 0;
     int inspect_map_plane = 0;
@@ -308,6 +376,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-decompression-failures") == 0)
         {
             self_test_decompression_failures = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-helpers") == 0)
+        {
+            self_test_map_helpers = 1;
             continue;
         }
 
@@ -709,6 +783,11 @@ int main(int argc, char **argv)
     if (self_test_decompression_failures)
     {
         return run_decompression_failure_self_test();
+    }
+
+    if (self_test_map_helpers)
+    {
+        return run_map_helper_self_test();
     }
 
     if (inspect_map_overview)
