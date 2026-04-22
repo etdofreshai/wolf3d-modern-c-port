@@ -48,6 +48,9 @@ fi
 if [[ -x "$ROOT/tests/map_plane_header_validation.sh" ]]; then
   "$ROOT/tests/map_plane_header_validation.sh"
 fi
+if [[ -x "$ROOT/tests/map_slot_validation.sh" ]]; then
+  "$ROOT/tests/map_slot_validation.sh"
+fi
 if [[ -x "$ROOT/tests/map_catalog_inspection.sh" ]]; then
   "$ROOT/tests/map_catalog_inspection.sh"
 fi

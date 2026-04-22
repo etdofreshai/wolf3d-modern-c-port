@@ -220,26 +220,22 @@ bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summa
     return true;
 }
 
-bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size)
+bool wolf_read_map_slot(const char *data_dir, size_t map_index, uint32_t *offset, bool *is_present, char *error_buffer, size_t error_buffer_size)
 {
     char maphead_path[4096];
-    char gamemaps_path[4096];
-    unsigned char header[38];
     unsigned char offset_bytes[4];
     FILE *file;
     wolf_maphead_summary maphead;
     uint32_t map_offset;
-    size_t i;
-    long file_size;
 
     if (error_buffer != NULL && error_buffer_size > 0)
     {
         error_buffer[0] = '\0';
     }
 
-    if (data_dir == NULL || summary == NULL)
+    if (data_dir == NULL || offset == NULL || is_present == NULL)
     {
-        set_error(error_buffer, error_buffer_size, "could not inspect map");
+        set_error(error_buffer, error_buffer_size, "could not inspect map slot");
         return false;
     }
 
@@ -278,7 +274,38 @@ bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summ
     fclose(file);
 
     map_offset = read_u32_le(offset_bytes);
-    if (map_offset == 0 || map_offset == 0xffffffffu)
+    *offset = map_offset;
+    *is_present = map_offset != 0 && map_offset != 0xffffffffu;
+    return true;
+}
+
+bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size)
+{
+    char gamemaps_path[4096];
+    unsigned char header[38];
+    FILE *file;
+    uint32_t map_offset;
+    bool is_present;
+    size_t i;
+    long file_size;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || summary == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect map");
+        return false;
+    }
+
+    if (!wolf_read_map_slot(data_dir, map_index, &map_offset, &is_present, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (!is_present)
     {
         set_error(error_buffer, error_buffer_size, "map index does not point to a map header");
         return false;

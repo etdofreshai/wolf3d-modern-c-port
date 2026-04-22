@@ -48,6 +48,7 @@ typedef struct wolf_loaded_map
 
 bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
+bool wolf_read_map_slot(const char *data_dir, size_t map_index, uint32_t *offset, bool *is_present, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_catalog(const char *data_dir, size_t count, wolf_map_summary *summaries, size_t summaries_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_map_header_is_valid(const wolf_map_summary *summary);

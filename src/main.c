@@ -280,6 +280,8 @@ int main(int argc, char **argv)
     int inspect_first_map = 0;
     int inspect_map = 0;
     size_t inspect_map_index = 0;
+    int inspect_map_slot = 0;
+    size_t inspect_map_slot_index = 0;
     int inspect_map_catalog = 0;
     size_t inspect_map_catalog_count = 0;
     int validate_map_header = 0;
@@ -360,6 +362,28 @@ int main(int argc, char **argv)
 
             inspect_map = 1;
             inspect_map_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-slot") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-map-slot requires an index\n", stderr);
+                return 1;
+            }
+
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_index < 0)
+            {
+                fputs("--inspect-map-slot index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_slot = 1;
+            inspect_map_slot_index = (size_t)parsed_index;
             continue;
         }
 
@@ -722,6 +746,30 @@ int main(int argc, char **argv)
         printf("map%zu plane1 offset: %u\n", inspect_map_index, map_summary.plane_offsets[1]);
         printf("map%zu plane2 offset: %u\n", inspect_map_index, map_summary.plane_offsets[2]);
         printf("map%zu plane0 length: %u\n", inspect_map_index, map_summary.plane_lengths[0]);
+        return 0;
+    }
+
+    if (inspect_map_slot)
+    {
+        uint32_t map_offset = 0;
+        bool is_present = false;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_map_slot(data_path, inspect_map_slot_index, &map_offset, &is_present, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("map%zu present: %s\n", inspect_map_slot_index, is_present ? "yes" : "no");
+        printf("map%zu offset: %u\n", inspect_map_slot_index, map_offset);
         return 0;
     }
 
