@@ -15,5 +15,8 @@ fi
 if [[ -x "$ROOT/tests/rlew_selftest.sh" ]]; then
   "$ROOT/tests/rlew_selftest.sh"
 fi
+if [[ -x "$ROOT/tests/map_plane_decoding.sh" ]]; then
+  "$ROOT/tests/map_plane_decoding.sh"
+fi
 
 echo "all automated checks passed"

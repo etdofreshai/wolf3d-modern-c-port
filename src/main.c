@@ -20,9 +20,12 @@ int main(int argc, char **argv)
     int inspect_first_map = 0;
     int validate_first_map_planes = 0;
     int self_test_rlew = 0;
+    int inspect_first_map_plane0 = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
+    wolf_map_plane_load_result plane_load_result;
+    uint16_t plane_words[64 * 64];
 
     for (i = 1; i < argc; ++i)
     {
@@ -59,6 +62,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-rlew") == 0)
         {
             self_test_rlew = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-first-map-plane0") == 0)
+        {
+            inspect_first_map_plane0 = 1;
             continue;
         }
 
@@ -170,6 +179,34 @@ int main(int argc, char **argv)
         }
         printf("rlew self-test ok: %04x %04x %04x %04x %04x\n",
             decoded[0], decoded[1], decoded[2], decoded[3], decoded[4]);
+        return 0;
+    }
+
+    if (inspect_first_map_plane0)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_first_map_plane_words(data_path, 0, plane_words, (sizeof(plane_words) / sizeof(plane_words[0])), &plane_load_result, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("plane0 compressed bytes: %u\n", plane_load_result.compressed_bytes);
+        printf("plane0 carmack expanded bytes: %u\n", plane_load_result.carmack_expanded_bytes);
+        printf("plane0 rlew expanded bytes: %u\n", plane_load_result.rlew_expanded_bytes);
+        printf("plane0 decoded words: %zu\n", plane_load_result.decoded_words);
+        printf("plane0 cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            plane_words[0],
+            plane_words[(31 * 64) + 31],
+            plane_words[(32 * 64) + 32],
+            plane_words[(63 * 64) + 63]);
         return 0;
     }
 

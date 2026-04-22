@@ -2,7 +2,19 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#define WOLF_CARMACK_NEARTAG 0xa7
+#define WOLF_CARMACK_FARTAG 0xa8
+
+static void set_error(char *error_buffer, size_t error_buffer_size, const char *message)
+{
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        snprintf(error_buffer, error_buffer_size, "%s", message);
+    }
+}
 
 bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_t *dest, size_t dest_words, uint16_t rlew_tag)
 {
@@ -41,6 +53,101 @@ bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_
     return (dest_index == dest_words);
 }
 
+bool wolf_carmack_expand_bytes(const uint8_t *source, size_t source_size, uint16_t *dest, size_t dest_words)
+{
+    size_t source_index = 0;
+    size_t dest_index = 0;
+
+    if (source == NULL || dest == NULL)
+    {
+        return false;
+    }
+
+    while (dest_index < dest_words)
+    {
+        uint16_t word;
+        uint8_t high_byte;
+        uint8_t count;
+        size_t copy_index;
+        size_t repeat_index;
+
+        if ((source_index + 1) >= source_size)
+        {
+            return false;
+        }
+
+        word = (uint16_t)(source[source_index] | ((uint16_t)source[source_index + 1] << 8));
+        source_index += 2;
+        high_byte = (uint8_t)(word >> 8);
+        count = (uint8_t)(word & 0xff);
+
+        if (high_byte == WOLF_CARMACK_NEARTAG)
+        {
+            if (count == 0)
+            {
+                if (source_index >= source_size)
+                {
+                    return false;
+                }
+                dest[dest_index++] = (uint16_t)(word | source[source_index++]);
+                continue;
+            }
+
+            if (source_index >= source_size)
+            {
+                return false;
+            }
+
+            copy_index = dest_index - source[source_index++];
+            if (copy_index >= dest_index || (dest_index + count) > dest_words)
+            {
+                return false;
+            }
+
+            for (repeat_index = 0; repeat_index < count; ++repeat_index)
+            {
+                dest[dest_index++] = dest[copy_index++];
+            }
+            continue;
+        }
+
+        if (high_byte == WOLF_CARMACK_FARTAG)
+        {
+            if (count == 0)
+            {
+                if (source_index >= source_size)
+                {
+                    return false;
+                }
+                dest[dest_index++] = (uint16_t)(word | source[source_index++]);
+                continue;
+            }
+
+            if ((source_index + 1) >= source_size)
+            {
+                return false;
+            }
+
+            copy_index = (size_t)(source[source_index] | ((size_t)source[source_index + 1] << 8));
+            source_index += 2;
+            if (copy_index >= dest_index || (dest_index + count) > dest_words)
+            {
+                return false;
+            }
+
+            for (repeat_index = 0; repeat_index < count; ++repeat_index)
+            {
+                dest[dest_index++] = dest[copy_index++];
+            }
+            continue;
+        }
+
+        dest[dest_index++] = word;
+    }
+
+    return true;
+}
+
 static uint16_t read_u16_le(const unsigned char *bytes)
 {
     return (uint16_t)(bytes[0] | ((uint16_t)bytes[1] << 8));
@@ -68,10 +175,7 @@ bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summa
 
     if (data_dir == NULL || summary == NULL)
     {
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not inspect MAPHEAD.WL6");
-        }
+        set_error(error_buffer, error_buffer_size, "could not inspect MAPHEAD.WL6");
         return false;
     }
 
@@ -79,30 +183,21 @@ bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summa
     file = fopen(path, "rb");
     if (file == NULL)
     {
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not open %s", path);
-        }
+        snprintf(error_buffer, error_buffer_size, "could not open %s", path);
         return false;
     }
 
     if (fread(header, 1, sizeof(header), file) != sizeof(header))
     {
         fclose(file);
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not read MAPHEAD.WL6 header");
-        }
+        set_error(error_buffer, error_buffer_size, "could not read MAPHEAD.WL6 header");
         return false;
     }
 
     if (fseek(file, 0, SEEK_END) != 0)
     {
         fclose(file);
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not size MAPHEAD.WL6");
-        }
+        set_error(error_buffer, error_buffer_size, "could not size MAPHEAD.WL6");
         return false;
     }
 
@@ -110,10 +205,7 @@ bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summa
     fclose(file);
     if (file_size < 6)
     {
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "MAPHEAD.WL6 is too small");
-        }
+        set_error(error_buffer, error_buffer_size, "MAPHEAD.WL6 is too small");
         return false;
     }
 
@@ -139,10 +231,7 @@ bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary
 
     if (data_dir == NULL || summary == NULL)
     {
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not inspect first map");
-        }
+        set_error(error_buffer, error_buffer_size, "could not inspect first map");
         return false;
     }
 
@@ -155,40 +244,28 @@ bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary
     file = fopen(path, "rb");
     if (file == NULL)
     {
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not open %s", path);
-        }
+        snprintf(error_buffer, error_buffer_size, "could not open %s", path);
         return false;
     }
 
     if (fseek(file, (long)maphead.first_map_offset, SEEK_SET) != 0)
     {
         fclose(file);
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not seek to first map header");
-        }
+        set_error(error_buffer, error_buffer_size, "could not seek to first map header");
         return false;
     }
 
     if (fread(header, 1, sizeof(header), file) != sizeof(header))
     {
         fclose(file);
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not read first map header");
-        }
+        set_error(error_buffer, error_buffer_size, "could not read first map header");
         return false;
     }
 
     if (fseek(file, 0, SEEK_END) != 0)
     {
         fclose(file);
-        if (error_buffer != NULL && error_buffer_size > 0)
-        {
-            snprintf(error_buffer, error_buffer_size, "could not size GAMEMAPS.WL6");
-        }
+        set_error(error_buffer, error_buffer_size, "could not size GAMEMAPS.WL6");
         return false;
     }
 
@@ -210,14 +287,6 @@ bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary
     memcpy(summary->name, header + 22, 16);
     summary->name[16] = '\0';
     summary->gamemaps_file_size = (uint32_t)file_size;
-    for (i = 0; i < 16; ++i)
-    {
-        if (summary->name[i] == '\0')
-        {
-            break;
-        }
-    }
-
     return true;
 }
 
@@ -242,6 +311,146 @@ bool wolf_first_map_planes_are_in_bounds(const wolf_map_summary *summary)
         {
             return false;
         }
+    }
+
+    return true;
+}
+
+bool wolf_load_first_map_plane_words(const char *data_dir, size_t plane_index, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size)
+{
+    char path[4096];
+    FILE *file;
+    wolf_map_summary summary;
+    wolf_maphead_summary maphead;
+    unsigned char *compressed_bytes;
+    uint16_t *carmack_words;
+    uint16_t carmack_expanded_bytes;
+    uint16_t rlew_expanded_bytes;
+    size_t compressed_size;
+    size_t carmack_word_count;
+    bool ok;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || dest == NULL || result == NULL || plane_index >= 3)
+    {
+        set_error(error_buffer, error_buffer_size, "could not load first map plane");
+        return false;
+    }
+
+    if (!wolf_read_maphead_summary(data_dir, &maphead, error_buffer, error_buffer_size)
+        || !wolf_read_first_map_summary(data_dir, &summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (!wolf_first_map_planes_are_in_bounds(&summary))
+    {
+        set_error(error_buffer, error_buffer_size, "first map plane offsets are out of bounds");
+        return false;
+    }
+
+    compressed_size = summary.plane_lengths[plane_index];
+    if (compressed_size < 4)
+    {
+        set_error(error_buffer, error_buffer_size, "first map plane is too small");
+        return false;
+    }
+
+    snprintf(path, sizeof(path), "%s/GAMEMAPS.WL6", data_dir);
+    file = fopen(path, "rb");
+    if (file == NULL)
+    {
+        snprintf(error_buffer, error_buffer_size, "could not open %s", path);
+        return false;
+    }
+
+    if (fseek(file, (long)summary.plane_offsets[plane_index], SEEK_SET) != 0)
+    {
+        fclose(file);
+        set_error(error_buffer, error_buffer_size, "could not seek to first map plane");
+        return false;
+    }
+
+    compressed_bytes = (unsigned char *)malloc(compressed_size);
+    if (compressed_bytes == NULL)
+    {
+        fclose(file);
+        set_error(error_buffer, error_buffer_size, "out of memory reading first map plane");
+        return false;
+    }
+
+    if (fread(compressed_bytes, 1, compressed_size, file) != compressed_size)
+    {
+        free(compressed_bytes);
+        fclose(file);
+        set_error(error_buffer, error_buffer_size, "could not read first map plane");
+        return false;
+    }
+    fclose(file);
+
+    carmack_expanded_bytes = read_u16_le(compressed_bytes);
+    if ((carmack_expanded_bytes % 2) != 0)
+    {
+        free(compressed_bytes);
+        set_error(error_buffer, error_buffer_size, "carmack-expanded size must be even");
+        return false;
+    }
+
+    carmack_word_count = (size_t)(carmack_expanded_bytes / 2);
+    if (carmack_word_count == 0)
+    {
+        free(compressed_bytes);
+        set_error(error_buffer, error_buffer_size, "carmack-expanded plane is empty");
+        return false;
+    }
+
+    carmack_words = (uint16_t *)malloc(carmack_word_count * sizeof(uint16_t));
+    if (carmack_words == NULL)
+    {
+        free(compressed_bytes);
+        set_error(error_buffer, error_buffer_size, "out of memory expanding first map plane");
+        return false;
+    }
+
+    ok = wolf_carmack_expand_bytes(compressed_bytes + 2, compressed_size - 2, carmack_words, carmack_word_count);
+    free(compressed_bytes);
+    if (!ok)
+    {
+        free(carmack_words);
+        set_error(error_buffer, error_buffer_size, "could not Carmack-expand first map plane");
+        return false;
+    }
+
+    rlew_expanded_bytes = carmack_words[0];
+    if ((rlew_expanded_bytes % 2) != 0)
+    {
+        free(carmack_words);
+        set_error(error_buffer, error_buffer_size, "RLEW-expanded size must be even");
+        return false;
+    }
+
+    result->compressed_bytes = summary.plane_lengths[plane_index];
+    result->carmack_expanded_bytes = carmack_expanded_bytes;
+    result->rlew_expanded_bytes = rlew_expanded_bytes;
+    result->decoded_words = (size_t)(rlew_expanded_bytes / 2);
+
+    if (result->decoded_words > dest_words)
+    {
+        free(carmack_words);
+        set_error(error_buffer, error_buffer_size, "destination buffer is too small for map plane");
+        return false;
+    }
+
+    ok = wolf_rlew_expand_words(carmack_words + 1, carmack_word_count - 1, dest, result->decoded_words, maphead.rlew_tag);
+    free(carmack_words);
+    if (!ok)
+    {
+        set_error(error_buffer, error_buffer_size, "could not RLEW-expand first map plane");
+        return false;
     }
 
     return true;
