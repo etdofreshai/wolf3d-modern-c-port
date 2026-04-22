@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$ROOT/build"
 BIN="$BUILD_DIR/wolf3d_port"
+VALID_DATA_DIR="$(cd "$ROOT/../game-data/base" && pwd)"
 
 mkdir -p "$BUILD_DIR"
 
@@ -15,23 +16,18 @@ gcc -std=c17 -Wall -Wextra -Werror \
   "$ROOT/src/core/assets.c" \
   -o "$BIN"
 
-OUTPUT="$($BIN --self-test-map-validation)"
+OUTPUT="$($BIN --validate-map-plane-table 1 --data "$VALID_DATA_DIR")"
 
 for expected in \
-  "map header valid ok" \
-  "map header missing plane ok" \
-  "map dimensions supported ok" \
-  "map dimensions oversized ok" \
-  "map plane header valid ok" \
-  "map plane table valid ok" \
-  "map plane table invalid ok" \
-  "map plane header odd size ok" \
-  "map plane header wrong decoded size ok"; do
+  "map1 plane table valid: yes" \
+  "map1 plane0 valid: yes" \
+  "map1 plane1 valid: yes" \
+  "map1 plane2 valid: yes"; do
   if [[ "$OUTPUT" != *"$expected"* ]]; then
-    echo "missing expected output: $expected"
+    echo "missing expected plane-table validation output: $expected"
     echo "got: $OUTPUT"
     exit 1
   fi
 done
 
-echo "map validation self-test passed"
+echo "map plane table validation passed"

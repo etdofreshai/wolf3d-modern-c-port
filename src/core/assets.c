@@ -510,6 +510,33 @@ bool wolf_map_plane_header_is_in_bounds(const wolf_map_summary *summary, size_t 
     return true;
 }
 
+bool wolf_map_plane_is_valid(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header)
+{
+    return wolf_map_plane_header_is_valid_for_map(summary, header)
+        && wolf_map_plane_header_matches_summary(summary, plane_index, header)
+        && wolf_map_plane_header_is_in_bounds(summary, plane_index, header);
+}
+
+bool wolf_map_plane_headers_are_valid(const wolf_map_summary *summary, const wolf_map_plane_header headers[3])
+{
+    size_t plane_index;
+
+    if (summary == NULL || headers == NULL)
+    {
+        return false;
+    }
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        if (!wolf_map_plane_is_valid(summary, plane_index, &headers[plane_index]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary)
 {
     size_t i;
