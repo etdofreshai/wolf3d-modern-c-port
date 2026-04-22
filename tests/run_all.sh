@@ -24,5 +24,8 @@ fi
 if [[ -x "$ROOT/tests/map_plane_layers.sh" ]]; then
   "$ROOT/tests/map_plane_layers.sh"
 fi
+if [[ -x "$ROOT/tests/map_index_loading.sh" ]]; then
+  "$ROOT/tests/map_index_loading.sh"
+fi
 
 echo "all automated checks passed"
