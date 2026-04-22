@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "wolf3d/assets.h"
@@ -20,7 +21,8 @@ int main(int argc, char **argv)
     int inspect_first_map = 0;
     int validate_first_map_planes = 0;
     int self_test_rlew = 0;
-    int inspect_first_map_plane0 = 0;
+    int inspect_first_map_plane = 0;
+    size_t inspect_first_map_plane_index = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
@@ -67,7 +69,30 @@ int main(int argc, char **argv)
 
         if (strcmp(argv[i], "--inspect-first-map-plane0") == 0)
         {
-            inspect_first_map_plane0 = 1;
+            inspect_first_map_plane = 1;
+            inspect_first_map_plane_index = 0;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-first-map-plane") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-first-map-plane requires an index\n", stderr);
+                return 1;
+            }
+
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_index < 0 || parsed_index > 2)
+            {
+                fputs("--inspect-first-map-plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+
+            inspect_first_map_plane = 1;
+            inspect_first_map_plane_index = (size_t)parsed_index;
             continue;
         }
 
@@ -182,7 +207,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    if (inspect_first_map_plane0)
+    if (inspect_first_map_plane)
     {
         if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
         {
@@ -191,18 +216,19 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        if (!wolf_load_first_map_plane_words(data_path, 0, plane_words, (sizeof(plane_words) / sizeof(plane_words[0])), &plane_load_result, error_buffer, sizeof(error_buffer)))
+        if (!wolf_load_first_map_plane_words(data_path, inspect_first_map_plane_index, plane_words, (sizeof(plane_words) / sizeof(plane_words[0])), &plane_load_result, error_buffer, sizeof(error_buffer)))
         {
             fputs(error_buffer, stderr);
             fputc('\n', stderr);
             return 1;
         }
 
-        printf("plane0 compressed bytes: %u\n", plane_load_result.compressed_bytes);
-        printf("plane0 carmack expanded bytes: %u\n", plane_load_result.carmack_expanded_bytes);
-        printf("plane0 rlew expanded bytes: %u\n", plane_load_result.rlew_expanded_bytes);
-        printf("plane0 decoded words: %zu\n", plane_load_result.decoded_words);
-        printf("plane0 cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+        printf("plane%zu compressed bytes: %u\n", inspect_first_map_plane_index, plane_load_result.compressed_bytes);
+        printf("plane%zu carmack expanded bytes: %u\n", inspect_first_map_plane_index, plane_load_result.carmack_expanded_bytes);
+        printf("plane%zu rlew expanded bytes: %u\n", inspect_first_map_plane_index, plane_load_result.rlew_expanded_bytes);
+        printf("plane%zu decoded words: %zu\n", inspect_first_map_plane_index, plane_load_result.decoded_words);
+        printf("plane%zu cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            inspect_first_map_plane_index,
             plane_words[0],
             plane_words[(31 * 64) + 31],
             plane_words[(32 * 64) + 32],
