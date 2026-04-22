@@ -339,6 +339,31 @@ bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary
     return wolf_read_map_summary(data_dir, 0, summary, error_buffer, error_buffer_size);
 }
 
+bool wolf_map_header_is_valid(const wolf_map_summary *summary)
+{
+    size_t i;
+
+    if (summary == NULL)
+    {
+        return false;
+    }
+
+    if (summary->width == 0 || summary->height == 0 || summary->name[0] == '\0')
+    {
+        return false;
+    }
+
+    for (i = 0; i < 3; ++i)
+    {
+        if (summary->plane_offsets[i] == 0 || summary->plane_lengths[i] == 0)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary)
 {
     size_t i;
@@ -401,9 +426,9 @@ bool wolf_load_map_plane_words(const char *data_dir, size_t map_index, size_t pl
         return false;
     }
 
-    if (!wolf_map_planes_are_in_bounds(&summary))
+    if (!wolf_map_header_is_valid(&summary) || !wolf_map_planes_are_in_bounds(&summary))
     {
-        set_error(error_buffer, error_buffer_size, "map plane offsets are out of bounds");
+        set_error(error_buffer, error_buffer_size, "map header is invalid");
         return false;
     }
 

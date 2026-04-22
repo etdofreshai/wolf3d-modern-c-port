@@ -30,6 +30,9 @@ fi
 if [[ -x "$ROOT/tests/map_index_loading.sh" ]]; then
   "$ROOT/tests/map_index_loading.sh"
 fi
+if [[ -x "$ROOT/tests/map_header_validation.sh" ]]; then
+  "$ROOT/tests/map_header_validation.sh"
+fi
 if [[ -x "$ROOT/tests/map_overview_loading.sh" ]]; then
   "$ROOT/tests/map_overview_loading.sh"
 fi

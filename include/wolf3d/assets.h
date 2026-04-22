@@ -40,6 +40,7 @@ typedef struct wolf_loaded_map
 bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
+bool wolf_map_header_is_valid(const wolf_map_summary *summary);
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary);
 bool wolf_first_map_planes_are_in_bounds(const wolf_map_summary *summary);
 bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_t *dest, size_t dest_words, uint16_t rlew_tag);
