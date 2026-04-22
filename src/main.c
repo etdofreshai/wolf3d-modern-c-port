@@ -92,10 +92,13 @@ int main(int argc, char **argv)
     int inspect_map_plane = 0;
     size_t inspect_map_plane_map_index = 0;
     size_t inspect_map_plane_index = 0;
+    int inspect_map_overview = 0;
+    size_t inspect_map_overview_index = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
     wolf_map_plane_load_result plane_load_result;
+    wolf_loaded_map loaded_map;
     uint16_t plane_words[64 * 64];
 
     for (i = 1; i < argc; ++i)
@@ -192,6 +195,28 @@ int main(int argc, char **argv)
             inspect_map_plane = 1;
             inspect_map_plane_map_index = (size_t)parsed_map_index;
             inspect_map_plane_index = (size_t)parsed_plane_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-overview") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-map-overview requires an index\n", stderr);
+                return 1;
+            }
+
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_index < 0)
+            {
+                fputs("--inspect-map-overview index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_overview = 1;
+            inspect_map_overview_index = (size_t)parsed_index;
             continue;
         }
 
@@ -363,6 +388,45 @@ int main(int argc, char **argv)
     if (self_test_carmack)
     {
         return run_carmack_self_test();
+    }
+
+    if (inspect_map_overview)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_map(data_path, inspect_map_overview_index, &loaded_map, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("map%zu overview name: %s\n", inspect_map_overview_index, loaded_map.summary.name);
+        printf("map%zu overview size: %ux%u\n", inspect_map_overview_index, loaded_map.summary.width, loaded_map.summary.height);
+        printf("map%zu plane0 cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            inspect_map_overview_index,
+            loaded_map.plane_words[0][0],
+            loaded_map.plane_words[0][(31 * 64) + 31],
+            loaded_map.plane_words[0][(32 * 64) + 32],
+            loaded_map.plane_words[0][(63 * 64) + 63]);
+        printf("map%zu plane1 cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            inspect_map_overview_index,
+            loaded_map.plane_words[1][0],
+            loaded_map.plane_words[1][(31 * 64) + 31],
+            loaded_map.plane_words[1][(32 * 64) + 32],
+            loaded_map.plane_words[1][(63 * 64) + 63]);
+        printf("map%zu plane2 cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            inspect_map_overview_index,
+            loaded_map.plane_words[2][0],
+            loaded_map.plane_words[2][(31 * 64) + 31],
+            loaded_map.plane_words[2][(32 * 64) + 32],
+            loaded_map.plane_words[2][(63 * 64) + 63]);
+        return 0;
     }
 
     if (inspect_first_map_plane)

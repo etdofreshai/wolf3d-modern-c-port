@@ -509,3 +509,46 @@ bool wolf_load_first_map_plane_words(const char *data_dir, size_t plane_index, u
 {
     return wolf_load_map_plane_words(data_dir, 0, plane_index, dest, dest_words, result, error_buffer, error_buffer_size);
 }
+
+bool wolf_load_map(const char *data_dir, size_t map_index, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size)
+{
+    size_t plane_index;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || map == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not load map");
+        return false;
+    }
+
+    if (!wolf_read_map_summary(data_dir, map_index, &map->summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        if (!wolf_load_map_plane_words(data_dir,
+                map_index,
+                plane_index,
+                map->plane_words[plane_index],
+                (sizeof(map->plane_words[plane_index]) / sizeof(map->plane_words[plane_index][0])),
+                &map->plane_results[plane_index],
+                error_buffer,
+                error_buffer_size))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool wolf_load_first_map(const char *data_dir, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size)
+{
+    return wolf_load_map(data_dir, 0, map, error_buffer, error_buffer_size);
+}
