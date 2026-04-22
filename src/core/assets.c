@@ -768,3 +768,27 @@ bool wolf_load_first_map(const char *data_dir, wolf_loaded_map *map, char *error
 {
     return wolf_load_map(data_dir, 0, map, error_buffer, error_buffer_size);
 }
+
+bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value)
+{
+    size_t index;
+
+    if (map == NULL || value == NULL || plane_index >= 3)
+    {
+        return false;
+    }
+
+    if (!wolf_map_dimensions_are_supported(&map->summary))
+    {
+        return false;
+    }
+
+    if (x >= map->summary.width || y >= map->summary.height)
+    {
+        return false;
+    }
+
+    index = (y * (size_t)map->summary.width) + x;
+    *value = map->plane_words[plane_index][index];
+    return true;
+}

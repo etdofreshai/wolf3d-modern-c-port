@@ -152,6 +152,10 @@ int main(int argc, char **argv)
     size_t inspect_map_plane_header_index = 0;
     int inspect_map_overview = 0;
     size_t inspect_map_overview_index = 0;
+    int inspect_map_cell = 0;
+    size_t inspect_map_cell_map_index = 0;
+    size_t inspect_map_cell_x = 0;
+    size_t inspect_map_cell_y = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
@@ -388,6 +392,46 @@ int main(int argc, char **argv)
 
             inspect_map_overview = 1;
             inspect_map_overview_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-cell") == 0)
+        {
+            char *map_end = NULL;
+            char *x_end = NULL;
+            char *y_end = NULL;
+            long parsed_map_index;
+            long parsed_x;
+            long parsed_y;
+            if ((i + 3) >= argc)
+            {
+                fputs("--inspect-map-cell requires a map index, x, and y\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_x = strtol(argv[++i], &x_end, 10);
+            parsed_y = strtol(argv[++i], &y_end, 10);
+            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-map-cell map index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (x_end == argv[i - 1] || *x_end != '\0' || parsed_x < 0)
+            {
+                fputs("--inspect-map-cell x must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (y_end == argv[i] || *y_end != '\0' || parsed_y < 0)
+            {
+                fputs("--inspect-map-cell y must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_cell = 1;
+            inspect_map_cell_map_index = (size_t)parsed_map_index;
+            inspect_map_cell_x = (size_t)parsed_x;
+            inspect_map_cell_y = (size_t)parsed_y;
             continue;
         }
 
@@ -703,6 +747,40 @@ int main(int argc, char **argv)
             loaded_map.plane_words[2][(31 * 64) + 31],
             loaded_map.plane_words[2][(32 * 64) + 32],
             loaded_map.plane_words[2][(63 * 64) + 63]);
+        return 0;
+    }
+
+    if (inspect_map_cell)
+    {
+        uint16_t plane0_value;
+        uint16_t plane1_value;
+        uint16_t plane2_value;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_map(data_path, inspect_map_cell_map_index, &loaded_map, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_cell(&loaded_map, 0, inspect_map_cell_x, inspect_map_cell_y, &plane0_value)
+            || !wolf_map_get_cell(&loaded_map, 1, inspect_map_cell_x, inspect_map_cell_y, &plane1_value)
+            || !wolf_map_get_cell(&loaded_map, 2, inspect_map_cell_x, inspect_map_cell_y, &plane2_value))
+        {
+            fprintf(stderr, "map cell is out of bounds: %zux%zu\n", inspect_map_cell_x, inspect_map_cell_y);
+            return 1;
+        }
+
+        printf("map%zu cell[%zu,%zu] plane0: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane0_value);
+        printf("map%zu cell[%zu,%zu] plane1: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane1_value);
+        printf("map%zu cell[%zu,%zu] plane2: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane2_value);
         return 0;
     }
 
