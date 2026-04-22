@@ -22,6 +22,15 @@ typedef struct wolf_map_summary
     uint32_t gamemaps_file_size;
 } wolf_map_summary;
 
+typedef struct wolf_map_plane_header
+{
+    uint32_t offset;
+    uint16_t length;
+    uint16_t carmack_expanded_bytes;
+    uint16_t rlew_expanded_bytes;
+    size_t decoded_words;
+} wolf_map_plane_header;
+
 typedef struct wolf_map_plane_load_result
 {
     uint16_t compressed_bytes;
@@ -44,6 +53,7 @@ bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary
 bool wolf_map_header_is_valid(const wolf_map_summary *summary);
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary);
 bool wolf_first_map_planes_are_in_bounds(const wolf_map_summary *summary);
+bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t plane_index, wolf_map_plane_header *header, char *error_buffer, size_t error_buffer_size);
 bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_t *dest, size_t dest_words, uint16_t rlew_tag);
 bool wolf_carmack_expand_bytes(const uint8_t *source, size_t source_size, uint16_t *dest, size_t dest_words);
 bool wolf_load_map_plane_words(const char *data_dir, size_t map_index, size_t plane_index, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size);

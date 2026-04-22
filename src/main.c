@@ -144,11 +144,15 @@ int main(int argc, char **argv)
     int inspect_map_plane = 0;
     size_t inspect_map_plane_map_index = 0;
     size_t inspect_map_plane_index = 0;
+    int inspect_map_plane_header = 0;
+    size_t inspect_map_plane_header_map_index = 0;
+    size_t inspect_map_plane_header_index = 0;
     int inspect_map_overview = 0;
     size_t inspect_map_overview_index = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
+    wolf_map_plane_header plane_header;
     wolf_map_plane_load_result plane_load_result;
     wolf_loaded_map loaded_map;
     uint16_t plane_words[64 * 64];
@@ -297,6 +301,37 @@ int main(int argc, char **argv)
             inspect_map_plane = 1;
             inspect_map_plane_map_index = (size_t)parsed_map_index;
             inspect_map_plane_index = (size_t)parsed_plane_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-plane-header") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            if ((i + 2) >= argc)
+            {
+                fputs("--inspect-map-plane-header requires a map index and plane index\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            if (map_end == argv[i - 1] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-map-plane-header map index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--inspect-map-plane-header plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+
+            inspect_map_plane_header = 1;
+            inspect_map_plane_header_map_index = (size_t)parsed_map_index;
+            inspect_map_plane_header_index = (size_t)parsed_plane_index;
             continue;
         }
 
@@ -602,6 +637,46 @@ int main(int argc, char **argv)
             loaded_map.plane_words[2][(31 * 64) + 31],
             loaded_map.plane_words[2][(32 * 64) + 32],
             loaded_map.plane_words[2][(63 * 64) + 63]);
+        return 0;
+    }
+
+    if (inspect_map_plane_header)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_map_summary(data_path, inspect_map_plane_header_map_index, &map_summary, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_map_plane_header(data_path,
+                inspect_map_plane_header_map_index,
+                inspect_map_plane_header_index,
+                &plane_header,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("map%zu plane%zu header valid: %s\n",
+            inspect_map_plane_header_map_index,
+            inspect_map_plane_header_index,
+            (wolf_map_header_is_valid(&map_summary) && wolf_map_planes_are_in_bounds(&map_summary)) ? "yes" : "no");
+        printf("map%zu plane%zu offset: %u\n", inspect_map_plane_header_map_index, inspect_map_plane_header_index, plane_header.offset);
+        printf("map%zu plane%zu length: %u\n", inspect_map_plane_header_map_index, inspect_map_plane_header_index, plane_header.length);
+        printf("map%zu plane%zu carmack expanded bytes: %u\n", inspect_map_plane_header_map_index, inspect_map_plane_header_index, plane_header.carmack_expanded_bytes);
+        printf("map%zu plane%zu rlew expanded bytes: %u\n", inspect_map_plane_header_map_index, inspect_map_plane_header_index, plane_header.rlew_expanded_bytes);
+        printf("map%zu plane%zu decoded words: %zu\n", inspect_map_plane_header_map_index, inspect_map_plane_header_index, plane_header.decoded_words);
         return 0;
     }
 
