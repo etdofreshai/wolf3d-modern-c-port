@@ -75,6 +75,53 @@ static int run_carmack_self_test(void)
     return 0;
 }
 
+static int run_decompression_failure_self_test(void)
+{
+    static const uint16_t rlew_truncated_tag[] = {0xabcd};
+    static const uint16_t rlew_trailing_data[] = {0x1111, 0x2222};
+    static const uint8_t carmack_truncated_literal[] = {0x00, 0xa7};
+    static const uint8_t carmack_trailing_data[] = {0x11, 0x11, 0x22, 0x22};
+    static const uint8_t carmack_invalid_far[] = {0x11, 0x11, 0x01, 0xa8, 0x02, 0x00};
+    uint16_t decoded[4];
+
+    if (wolf_rlew_expand_words(rlew_truncated_tag, 1, decoded, 1, 0xabcd))
+    {
+        fputs("rlew truncated-tag self-test failed\n", stderr);
+        return 1;
+    }
+    puts("rlew truncated tag ok");
+
+    if (wolf_rlew_expand_words(rlew_trailing_data, 2, decoded, 1, 0xabcd))
+    {
+        fputs("rlew trailing-data self-test failed\n", stderr);
+        return 1;
+    }
+    puts("rlew trailing data ok");
+
+    if (wolf_carmack_expand_bytes(carmack_truncated_literal, sizeof(carmack_truncated_literal), decoded, 1))
+    {
+        fputs("carmack truncated-literal self-test failed\n", stderr);
+        return 1;
+    }
+    puts("carmack truncated literal ok");
+
+    if (wolf_carmack_expand_bytes(carmack_trailing_data, sizeof(carmack_trailing_data), decoded, 1))
+    {
+        fputs("carmack trailing-data self-test failed\n", stderr);
+        return 1;
+    }
+    puts("carmack trailing data ok");
+
+    if (wolf_carmack_expand_bytes(carmack_invalid_far, sizeof(carmack_invalid_far), decoded, 2))
+    {
+        fputs("carmack invalid-far self-test failed\n", stderr);
+        return 1;
+    }
+    puts("carmack invalid far ok");
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int i;
@@ -87,6 +134,7 @@ int main(int argc, char **argv)
     int validate_first_map_planes = 0;
     int self_test_rlew = 0;
     int self_test_carmack = 0;
+    int self_test_decompression_failures = 0;
     int inspect_first_map_plane = 0;
     size_t inspect_first_map_plane_index = 0;
     int inspect_map_plane = 0;
@@ -164,6 +212,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-carmack") == 0)
         {
             self_test_carmack = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-decompression-failures") == 0)
+        {
+            self_test_decompression_failures = 1;
             continue;
         }
 
@@ -388,6 +442,11 @@ int main(int argc, char **argv)
     if (self_test_carmack)
     {
         return run_carmack_self_test();
+    }
+
+    if (self_test_decompression_failures)
+    {
+        return run_decompression_failure_self_test();
     }
 
     if (inspect_map_overview)

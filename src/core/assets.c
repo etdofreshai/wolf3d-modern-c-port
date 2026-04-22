@@ -21,6 +21,11 @@ bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_
     size_t source_index = 0;
     size_t dest_index = 0;
 
+    if (source == NULL || dest == NULL)
+    {
+        return false;
+    }
+
     while (source_index < source_words && dest_index < dest_words)
     {
         uint16_t value = source[source_index++];
@@ -50,7 +55,7 @@ bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_
         }
     }
 
-    return (dest_index == dest_words);
+    return (dest_index == dest_words) && (source_index == source_words);
 }
 
 bool wolf_carmack_expand_bytes(const uint8_t *source, size_t source_size, uint16_t *dest, size_t dest_words)
@@ -145,7 +150,7 @@ bool wolf_carmack_expand_bytes(const uint8_t *source, size_t source_size, uint16
         dest[dest_index++] = word;
     }
 
-    return true;
+    return source_index == source_size;
 }
 
 static uint16_t read_u16_le(const unsigned char *bytes)

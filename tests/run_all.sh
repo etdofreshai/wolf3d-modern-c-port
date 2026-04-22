@@ -18,6 +18,9 @@ fi
 if [[ -x "$ROOT/tests/carmack_selftest.sh" ]]; then
   "$ROOT/tests/carmack_selftest.sh"
 fi
+if [[ -x "$ROOT/tests/decompression_failure_selftest.sh" ]]; then
+  "$ROOT/tests/decompression_failure_selftest.sh"
+fi
 if [[ -x "$ROOT/tests/map_plane_decoding.sh" ]]; then
   "$ROOT/tests/map_plane_decoding.sh"
 fi
