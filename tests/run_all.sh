@@ -36,5 +36,8 @@ fi
 if [[ -x "$ROOT/tests/map_overview_loading.sh" ]]; then
   "$ROOT/tests/map_overview_loading.sh"
 fi
+if [[ -x "$ROOT/tests/map_catalog_inspection.sh" ]]; then
+  "$ROOT/tests/map_catalog_inspection.sh"
+fi
 
 echo "all automated checks passed"

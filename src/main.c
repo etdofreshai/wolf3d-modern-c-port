@@ -131,6 +131,8 @@ int main(int argc, char **argv)
     int inspect_first_map = 0;
     int inspect_map = 0;
     size_t inspect_map_index = 0;
+    int inspect_map_catalog = 0;
+    size_t inspect_map_catalog_count = 0;
     int validate_map_header = 0;
     size_t validate_map_header_index = 0;
     int validate_first_map_planes = 0;
@@ -196,6 +198,28 @@ int main(int argc, char **argv)
 
             inspect_map = 1;
             inspect_map_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-catalog") == 0)
+        {
+            char *end = NULL;
+            long parsed_count;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-map-catalog requires a count\n", stderr);
+                return 1;
+            }
+
+            parsed_count = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_count < 0)
+            {
+                fputs("--inspect-map-catalog count must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_catalog = 1;
+            inspect_map_catalog_count = (size_t)parsed_count;
             continue;
         }
 
@@ -422,6 +446,52 @@ int main(int argc, char **argv)
         printf("map%zu plane1 offset: %u\n", inspect_map_index, map_summary.plane_offsets[1]);
         printf("map%zu plane2 offset: %u\n", inspect_map_index, map_summary.plane_offsets[2]);
         printf("map%zu plane0 length: %u\n", inspect_map_index, map_summary.plane_lengths[0]);
+        return 0;
+    }
+
+    if (inspect_map_catalog)
+    {
+        wolf_map_summary *catalog = NULL;
+        size_t loaded_count = 0;
+        size_t map_index;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        catalog = (wolf_map_summary *)calloc(inspect_map_catalog_count == 0 ? 1 : inspect_map_catalog_count, sizeof(wolf_map_summary));
+        if (catalog == NULL)
+        {
+            fputs("out of memory allocating map catalog\n", stderr);
+            return 1;
+        }
+
+        if (!wolf_read_map_catalog(data_path,
+                inspect_map_catalog_count,
+                catalog,
+                inspect_map_catalog_count,
+                &loaded_count,
+                &maphead_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            free(catalog);
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("map catalog total: %zu\n", maphead_summary.map_count);
+        for (map_index = 0; map_index < loaded_count; ++map_index)
+        {
+            printf("map%zu catalog name: %s\n", map_index, catalog[map_index].name);
+            printf("map%zu catalog size: %ux%u\n", map_index, catalog[map_index].width, catalog[map_index].height);
+        }
+
+        free(catalog);
         return 0;
     }
 

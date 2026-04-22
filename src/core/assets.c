@@ -334,6 +334,50 @@ bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summ
     return true;
 }
 
+bool wolf_read_map_catalog(const char *data_dir, size_t count, wolf_map_summary *summaries, size_t summaries_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_maphead_summary local_maphead;
+    size_t index;
+    size_t limit;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || summaries == NULL || loaded_count == NULL || count > summaries_count)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect map catalog");
+        return false;
+    }
+
+    if (!wolf_read_maphead_summary(data_dir, &local_maphead, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    limit = count;
+    if (limit > local_maphead.map_count)
+    {
+        limit = local_maphead.map_count;
+    }
+
+    for (index = 0; index < limit; ++index)
+    {
+        if (!wolf_read_map_summary(data_dir, index, &summaries[index], error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+    }
+
+    *loaded_count = limit;
+    if (maphead_summary != NULL)
+    {
+        *maphead_summary = local_maphead;
+    }
+    return true;
+}
+
 bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size)
 {
     return wolf_read_map_summary(data_dir, 0, summary, error_buffer, error_buffer_size);
