@@ -229,7 +229,9 @@ static int run_map_helper_self_test(void)
     wolf_loaded_map map;
     const wolf_map_plane_load_result *plane_result = NULL;
     const uint16_t *plane_words = NULL;
+    const uint16_t *row_words = NULL;
     size_t word_count = 0;
+    size_t row_length = 0;
     size_t index = 0;
     uint16_t column_words[64];
     size_t column_length = 0;
@@ -274,6 +276,16 @@ static int run_map_helper_self_test(void)
     }
     printf("map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[11]);
 
+    if (!wolf_map_get_row(&map, 1, 1, &row_words, &row_length)
+        || row_length != 4
+        || row_words[0] != 104
+        || row_words[3] != 107)
+    {
+        fputs("map helper row self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper row ok: length=%zu left=%u right=%u\n", row_length, row_words[0], row_words[3]);
+
     if (!wolf_map_get_column(&map, 1, 2, column_words, (sizeof(column_words) / sizeof(column_words[0])), &column_length)
         || column_length != 3
         || column_words[0] != 102
@@ -308,6 +320,13 @@ static int run_map_helper_self_test(void)
     }
     puts("map helper oob index ok");
 
+    if (wolf_map_get_row(&map, 1, 3, &row_words, &row_length))
+    {
+        fputs("map helper out-of-bounds row self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper oob row ok");
+
     if (wolf_map_get_cell(&map, 1, 0, 3, &cell_value))
     {
         fputs("map helper out-of-bounds cell self-test failed\n", stderr);
@@ -337,6 +356,64 @@ static int run_map_helper_self_test(void)
     puts("map helper invalid region ok");
 
     return 0;
+}
+
+static void print_loaded_map_summary(const char *label_prefix, const wolf_loaded_map *map)
+{
+    const wolf_map_plane_load_result *plane_result0 = NULL;
+    const wolf_map_plane_load_result *plane_result1 = NULL;
+    const wolf_map_plane_load_result *plane_result2 = NULL;
+
+    if (label_prefix == NULL || map == NULL)
+    {
+        return;
+    }
+
+    if (!wolf_map_get_plane_result(map, 0, &plane_result0)
+        || !wolf_map_get_plane_result(map, 1, &plane_result1)
+        || !wolf_map_get_plane_result(map, 2, &plane_result2))
+    {
+        return;
+    }
+
+    printf("%s load name: %s\n", label_prefix, map->summary.name);
+    printf("%s load size: %ux%u\n", label_prefix, map->summary.width, map->summary.height);
+    printf("%s plane0 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+        label_prefix,
+        plane_result0->compressed_bytes,
+        plane_result0->carmack_expanded_bytes,
+        plane_result0->rlew_expanded_bytes,
+        plane_result0->decoded_words);
+    printf("%s plane1 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+        label_prefix,
+        plane_result1->compressed_bytes,
+        plane_result1->carmack_expanded_bytes,
+        plane_result1->rlew_expanded_bytes,
+        plane_result1->decoded_words);
+    printf("%s plane2 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+        label_prefix,
+        plane_result2->compressed_bytes,
+        plane_result2->carmack_expanded_bytes,
+        plane_result2->rlew_expanded_bytes,
+        plane_result2->decoded_words);
+    printf("%s plane0 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+        label_prefix,
+        map->plane_words[0][0],
+        map->plane_words[0][(31 * 64) + 31],
+        map->plane_words[0][(32 * 64) + 32],
+        map->plane_words[0][(63 * 64) + 63]);
+    printf("%s plane1 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+        label_prefix,
+        map->plane_words[1][0],
+        map->plane_words[1][(31 * 64) + 31],
+        map->plane_words[1][(32 * 64) + 32],
+        map->plane_words[1][(63 * 64) + 63]);
+    printf("%s plane2 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+        label_prefix,
+        map->plane_words[2][0],
+        map->plane_words[2][(31 * 64) + 31],
+        map->plane_words[2][(32 * 64) + 32],
+        map->plane_words[2][(63 * 64) + 63]);
 }
 
 static int run_map_validation_self_test(void)
@@ -601,6 +678,7 @@ int main(int argc, char **argv)
     size_t inspect_present_map_plane_table_index = 0;
     int inspect_map_overview = 0;
     size_t inspect_map_overview_index = 0;
+    int inspect_first_map_load = 0;
     int inspect_map_load = 0;
     size_t inspect_map_load_index = 0;
     int inspect_map_cell = 0;
@@ -1523,6 +1601,12 @@ int main(int argc, char **argv)
             inspect_map_region_y = (size_t)parsed_y;
             inspect_map_region_width = (size_t)parsed_width;
             inspect_map_region_height = (size_t)parsed_height;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-first-map-load") == 0)
+        {
+            inspect_first_map_load = 1;
             continue;
         }
 
@@ -2585,6 +2669,26 @@ int main(int argc, char **argv)
             loaded_map.plane_words[2][(31 * 64) + 31],
             loaded_map.plane_words[2][(32 * 64) + 32],
             loaded_map.plane_words[2][(63 * 64) + 63]);
+        return 0;
+    }
+
+    if (inspect_first_map_load)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_first_map(data_path, &loaded_map, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        print_loaded_map_summary("first map", &loaded_map);
         return 0;
     }
 
