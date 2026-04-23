@@ -30,6 +30,9 @@ fi
 if [[ -x "$ROOT/tests/map_helper_selftest.sh" ]]; then
   "$ROOT/tests/map_helper_selftest.sh"
 fi
+if [[ -x "$ROOT/tests/map_plane_header_helper_selftest.sh" ]]; then
+  "$ROOT/tests/map_plane_header_helper_selftest.sh"
+fi
 if [[ -x "$ROOT/tests/present_map_helper_selftest.sh" ]]; then
   "$ROOT/tests/present_map_helper_selftest.sh"
 fi

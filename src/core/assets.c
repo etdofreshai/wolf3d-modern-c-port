@@ -2058,6 +2058,11 @@ bool wolf_load_map(const char *data_dir, size_t map_index, wolf_loaded_map *map,
 
     for (plane_index = 0; plane_index < 3; ++plane_index)
     {
+        if (!wolf_read_map_plane_header(data_dir, map_index, plane_index, &map->plane_headers[plane_index], error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+
         if (!wolf_load_map_plane_words(data_dir,
                 map_index,
                 plane_index,
@@ -2097,6 +2102,22 @@ bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, si
     }
 
     *index = (y * (size_t)summary->width) + x;
+    return true;
+}
+
+bool wolf_map_get_plane_header(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_header **header)
+{
+    if (map == NULL || header == NULL || plane_index >= 3)
+    {
+        return false;
+    }
+
+    if (map->summary.width == 0 || map->summary.height == 0 || map->summary.width > 64 || map->summary.height > 64)
+    {
+        return false;
+    }
+
+    *header = &map->plane_headers[plane_index];
     return true;
 }
 
@@ -2280,6 +2301,16 @@ bool wolf_present_map_get_slot_index(const wolf_loaded_present_map *entry, size_
 
     *slot_index = entry->slot_index;
     return true;
+}
+
+bool wolf_present_map_get_plane_header(const wolf_loaded_present_map *entry, size_t plane_index, const wolf_map_plane_header **header)
+{
+    if (entry == NULL)
+    {
+        return false;
+    }
+
+    return wolf_map_get_plane_header(&entry->map, plane_index, header);
 }
 
 bool wolf_present_map_get_plane_result(const wolf_loaded_present_map *entry, size_t plane_index, const wolf_map_plane_load_result **result)

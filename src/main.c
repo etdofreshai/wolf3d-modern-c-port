@@ -655,6 +655,72 @@ static void print_loaded_map_summary(const char *label_prefix, const wolf_loaded
         map->plane_words[2][(63 * 64) + 63]);
 }
 
+static int run_map_plane_header_helper_self_test(void)
+{
+    wolf_loaded_map map;
+    wolf_loaded_present_map present_map;
+    const wolf_map_plane_header *header = NULL;
+
+    memset(&map, 0, sizeof(map));
+    map.summary.width = 2;
+    map.summary.height = 2;
+    map.plane_headers[1].offset = 11;
+    map.plane_headers[1].length = 14;
+    map.plane_headers[1].carmack_expanded_bytes = 12;
+    map.plane_headers[1].rlew_expanded_bytes = 8;
+    map.plane_headers[1].decoded_words = 4;
+
+    if (!wolf_map_get_plane_header(&map, 1, &header)
+        || header->offset != 11
+        || header->length != 14
+        || header->decoded_words != 4)
+    {
+        fputs("map plane header helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map plane header helper ok: offset=%u length=%u words=%zu\n", header->offset, header->length, header->decoded_words);
+
+    if (wolf_map_get_plane_header(&map, 3, &header))
+    {
+        fputs("map plane header helper invalid-plane self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header helper invalid plane ok");
+
+    memset(&present_map, 0, sizeof(present_map));
+    present_map.slot_index = 7;
+    present_map.map.summary.width = 1;
+    present_map.map.summary.height = 2;
+    present_map.map.plane_headers[0].offset = 25;
+    present_map.map.plane_headers[0].length = 10;
+    present_map.map.plane_headers[0].carmack_expanded_bytes = 8;
+    present_map.map.plane_headers[0].rlew_expanded_bytes = 4;
+    present_map.map.plane_headers[0].decoded_words = 2;
+
+    if (!wolf_present_map_get_plane_header(&present_map, 0, &header)
+        || header->offset != 25
+        || header->length != 10
+        || header->decoded_words != 2)
+    {
+        fputs("present map plane header helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map plane header helper ok: slot=%zu offset=%u length=%u words=%zu\n",
+        present_map.slot_index,
+        header->offset,
+        header->length,
+        header->decoded_words);
+
+    if (wolf_present_map_get_plane_header(&present_map, 3, &header))
+    {
+        fputs("present map plane header helper invalid-plane self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map plane header helper invalid plane ok");
+
+    return 0;
+}
+
 static int run_map_validation_self_test(void)
 {
     wolf_map_summary valid_summary;
@@ -944,6 +1010,7 @@ int main(int argc, char **argv)
     int self_test_map_plane_decode = 0;
     int self_test_map_plane_header_bytes = 0;
     int self_test_map_helpers = 0;
+    int self_test_map_plane_header_helpers = 0;
     int self_test_present_map_helpers = 0;
     int self_test_map_validation = 0;
     int inspect_first_map_plane = 0;
@@ -1663,6 +1730,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-map-helpers") == 0)
         {
             self_test_map_helpers = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-plane-header-helpers") == 0)
+        {
+            self_test_map_plane_header_helpers = 1;
             continue;
         }
 
@@ -3367,6 +3440,11 @@ int main(int argc, char **argv)
     if (self_test_map_helpers)
     {
         return run_map_helper_self_test();
+    }
+
+    if (self_test_map_plane_header_helpers)
+    {
+        return run_map_plane_header_helper_self_test();
     }
 
     if (self_test_present_map_helpers)
