@@ -358,6 +358,115 @@ static int run_map_helper_self_test(void)
     return 0;
 }
 
+static int run_present_map_helper_self_test(void)
+{
+    wolf_loaded_present_map present_map;
+    const wolf_map_plane_load_result *plane_result = NULL;
+    const uint16_t *plane_words = NULL;
+    const uint16_t *row_words = NULL;
+    size_t slot_index = 0;
+    size_t word_count = 0;
+    size_t row_length = 0;
+    uint16_t column_words[64];
+    size_t column_length = 0;
+    uint16_t region_words[12];
+    size_t region_word_count = 0;
+    uint16_t cell_value = 0;
+    size_t i;
+
+    memset(&present_map, 0, sizeof(present_map));
+    present_map.slot_index = 7;
+    present_map.map.summary.width = 3;
+    present_map.map.summary.height = 2;
+    memcpy(present_map.map.summary.name, "Present", sizeof("Present"));
+    present_map.map.plane_results[0].compressed_bytes = 12;
+    present_map.map.plane_results[0].decoded_words = 6;
+
+    for (i = 0; i < 6; ++i)
+    {
+        present_map.map.plane_words[0][i] = (uint16_t)(200 + i);
+    }
+
+    if (!wolf_present_map_get_slot_index(&present_map, &slot_index) || slot_index != 7)
+    {
+        fputs("present map helper slot self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper slot ok: %zu\n", slot_index);
+
+    if (!wolf_present_map_get_plane_result(&present_map, 0, &plane_result)
+        || plane_result->compressed_bytes != 12
+        || plane_result->decoded_words != 6)
+    {
+        fputs("present map helper plane-result self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper plane result ok: compressed=%u words=%zu\n", plane_result->compressed_bytes, plane_result->decoded_words);
+
+    if (!wolf_present_map_get_plane_words(&present_map, 0, &plane_words, &word_count)
+        || word_count != 6
+        || plane_words[0] != 200
+        || plane_words[5] != 205)
+    {
+        fputs("present map helper plane self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[5]);
+
+    if (!wolf_present_map_get_row(&present_map, 0, 1, &row_words, &row_length)
+        || row_length != 3
+        || row_words[0] != 203
+        || row_words[2] != 205)
+    {
+        fputs("present map helper row self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper row ok: length=%zu left=%u right=%u\n", row_length, row_words[0], row_words[2]);
+
+    if (!wolf_present_map_get_column(&present_map, 0, 1, column_words, (sizeof(column_words) / sizeof(column_words[0])), &column_length)
+        || column_length != 2
+        || column_words[0] != 201
+        || column_words[1] != 204)
+    {
+        fputs("present map helper column self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper column ok: count=%zu top=%u bottom=%u\n", column_length, column_words[0], column_words[1]);
+
+    if (!wolf_present_map_get_region(&present_map, 0, 0, 0, 2, 2, region_words, (sizeof(region_words) / sizeof(region_words[0])), &region_word_count)
+        || region_word_count != 4
+        || region_words[0] != 200
+        || region_words[3] != 204)
+    {
+        fputs("present map helper region self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper region ok: count=%zu top-left=%u bottom-right=%u\n", region_word_count, region_words[0], region_words[3]);
+
+    if (!wolf_present_map_get_cell(&present_map, 0, 2, 0, &cell_value) || cell_value != 202)
+    {
+        fputs("present map helper cell self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper cell ok: %u\n", cell_value);
+
+    if (wolf_present_map_get_plane_words(&present_map, 3, &plane_words, &word_count))
+    {
+        fputs("present map helper invalid-plane self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map helper invalid plane ok");
+
+    if (wolf_present_map_get_cell(&present_map, 0, 3, 0, &cell_value))
+    {
+        fputs("present map helper invalid-cell self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map helper invalid cell ok");
+
+    return 0;
+}
+
 static void print_loaded_map_summary(const char *label_prefix, const wolf_loaded_map *map)
 {
     const wolf_map_plane_load_result *plane_result0 = NULL;
@@ -663,6 +772,7 @@ int main(int argc, char **argv)
     int self_test_decompression_failures = 0;
     int self_test_map_plane_decode = 0;
     int self_test_map_helpers = 0;
+    int self_test_present_map_helpers = 0;
     int self_test_map_validation = 0;
     int inspect_first_map_plane = 0;
     size_t inspect_first_map_plane_index = 0;
@@ -1258,6 +1368,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-map-helpers") == 0)
         {
             self_test_map_helpers = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-present-map-helpers") == 0)
+        {
+            self_test_present_map_helpers = 1;
             continue;
         }
 
@@ -2626,6 +2742,11 @@ int main(int argc, char **argv)
     if (self_test_map_helpers)
     {
         return run_map_helper_self_test();
+    }
+
+    if (self_test_present_map_helpers)
+    {
+        return run_present_map_helper_self_test();
     }
 
     if (self_test_map_validation)

@@ -27,6 +27,9 @@ fi
 if [[ -x "$ROOT/tests/map_helper_selftest.sh" ]]; then
   "$ROOT/tests/map_helper_selftest.sh"
 fi
+if [[ -x "$ROOT/tests/present_map_helper_selftest.sh" ]]; then
+  "$ROOT/tests/present_map_helper_selftest.sh"
+fi
 if [[ -x "$ROOT/tests/map_validation_selftest.sh" ]]; then
   "$ROOT/tests/map_validation_selftest.sh"
 fi
