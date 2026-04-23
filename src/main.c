@@ -544,6 +544,21 @@ int main(int argc, char **argv)
     size_t inspect_present_map_catalog_count = 0;
     int inspect_present_map_load = 0;
     size_t inspect_present_map_load_index = 0;
+    int inspect_present_map_cell = 0;
+    size_t inspect_present_map_cell_index = 0;
+    size_t inspect_present_map_cell_x = 0;
+    size_t inspect_present_map_cell_y = 0;
+    int inspect_present_map_row = 0;
+    size_t inspect_present_map_row_index = 0;
+    size_t inspect_present_map_row_plane_index = 0;
+    size_t inspect_present_map_row_y = 0;
+    int inspect_present_map_region = 0;
+    size_t inspect_present_map_region_index = 0;
+    size_t inspect_present_map_region_plane_index = 0;
+    size_t inspect_present_map_region_x = 0;
+    size_t inspect_present_map_region_y = 0;
+    size_t inspect_present_map_region_width = 0;
+    size_t inspect_present_map_region_height = 0;
     int inspect_present_map_load_catalog = 0;
     size_t inspect_present_map_load_catalog_count = 0;
     int validate_map_catalog = 0;
@@ -751,6 +766,153 @@ int main(int argc, char **argv)
 
             inspect_present_map_load = 1;
             inspect_present_map_load_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-cell") == 0)
+        {
+            char *map_end = NULL;
+            char *x_end = NULL;
+            char *y_end = NULL;
+            long parsed_map_index;
+            long parsed_x;
+            long parsed_y;
+            if ((i + 3) >= argc)
+            {
+                fputs("--inspect-present-map-cell requires a present-map index, x, and y\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_x = strtol(argv[++i], &x_end, 10);
+            parsed_y = strtol(argv[++i], &y_end, 10);
+            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-present-map-cell index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (x_end == argv[i - 1] || *x_end != '\0' || parsed_x < 0)
+            {
+                fputs("--inspect-present-map-cell x must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (y_end == argv[i] || *y_end != '\0' || parsed_y < 0)
+            {
+                fputs("--inspect-present-map-cell y must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_cell = 1;
+            inspect_present_map_cell_index = (size_t)parsed_map_index;
+            inspect_present_map_cell_x = (size_t)parsed_x;
+            inspect_present_map_cell_y = (size_t)parsed_y;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-row") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            char *y_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            long parsed_y;
+            if ((i + 3) >= argc)
+            {
+                fputs("--inspect-present-map-row requires a present-map index, plane index, and y\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            parsed_y = strtol(argv[++i], &y_end, 10);
+            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-present-map-row index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i - 1] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--inspect-present-map-row plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+            if (y_end == argv[i] || *y_end != '\0' || parsed_y < 0)
+            {
+                fputs("--inspect-present-map-row y must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_row = 1;
+            inspect_present_map_row_index = (size_t)parsed_map_index;
+            inspect_present_map_row_plane_index = (size_t)parsed_plane_index;
+            inspect_present_map_row_y = (size_t)parsed_y;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-region") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            char *x_end = NULL;
+            char *y_end = NULL;
+            char *width_end = NULL;
+            char *height_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            long parsed_x;
+            long parsed_y;
+            long parsed_width;
+            long parsed_height;
+            if ((i + 6) >= argc)
+            {
+                fputs("--inspect-present-map-region requires a present-map index, plane index, x, y, width, and height\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            parsed_x = strtol(argv[++i], &x_end, 10);
+            parsed_y = strtol(argv[++i], &y_end, 10);
+            parsed_width = strtol(argv[++i], &width_end, 10);
+            parsed_height = strtol(argv[++i], &height_end, 10);
+            if (map_end == argv[i - 5] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-present-map-region index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i - 4] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--inspect-present-map-region plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+            if (x_end == argv[i - 3] || *x_end != '\0' || parsed_x < 0)
+            {
+                fputs("--inspect-present-map-region x must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (y_end == argv[i - 2] || *y_end != '\0' || parsed_y < 0)
+            {
+                fputs("--inspect-present-map-region y must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (width_end == argv[i - 1] || *width_end != '\0' || parsed_width <= 0)
+            {
+                fputs("--inspect-present-map-region width must be a positive integer\n", stderr);
+                return 1;
+            }
+            if (height_end == argv[i] || *height_end != '\0' || parsed_height <= 0)
+            {
+                fputs("--inspect-present-map-region height must be a positive integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_region = 1;
+            inspect_present_map_region_index = (size_t)parsed_map_index;
+            inspect_present_map_region_plane_index = (size_t)parsed_plane_index;
+            inspect_present_map_region_x = (size_t)parsed_x;
+            inspect_present_map_region_y = (size_t)parsed_y;
+            inspect_present_map_region_width = (size_t)parsed_width;
+            inspect_present_map_region_height = (size_t)parsed_height;
             continue;
         }
 
@@ -1562,6 +1724,167 @@ int main(int argc, char **argv)
         }
 
         free(catalog);
+        return 0;
+    }
+
+    if (inspect_present_map_cell)
+    {
+        wolf_loaded_present_map present_map;
+        size_t plane_index;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map(data_path,
+                inspect_present_map_cell_index,
+                &present_map,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        for (plane_index = 0; plane_index < 3; ++plane_index)
+        {
+            uint16_t value = 0;
+            if (!wolf_map_get_cell(&present_map.map, plane_index, inspect_present_map_cell_x, inspect_present_map_cell_y, &value))
+            {
+                fputs("could not inspect present map cell\n", stderr);
+                return 1;
+            }
+
+            printf("present map%zu cell[%zu,%zu] plane%zu: %u\n",
+                inspect_present_map_cell_index,
+                inspect_present_map_cell_x,
+                inspect_present_map_cell_y,
+                plane_index,
+                value);
+        }
+
+        return 0;
+    }
+
+    if (inspect_present_map_row)
+    {
+        wolf_loaded_present_map present_map;
+        const uint16_t *row_words = NULL;
+        size_t row_length = 0;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map(data_path,
+                inspect_present_map_row_index,
+                &present_map,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_row(&present_map.map,
+                inspect_present_map_row_plane_index,
+                inspect_present_map_row_y,
+                &row_words,
+                &row_length))
+        {
+            fputs("could not inspect present map row\n", stderr);
+            return 1;
+        }
+
+        printf("present map%zu plane%zu row%zu length: %zu\n",
+            inspect_present_map_row_index,
+            inspect_present_map_row_plane_index,
+            inspect_present_map_row_y,
+            row_length);
+        if (row_length == 0)
+        {
+            puts("present map row is empty");
+            return 0;
+        }
+        printf("present map%zu plane%zu row%zu cells: [0]=%u [1]=%u [31]=%u [32]=%u [33]=%u [34]=%u [63]=%u\n",
+            inspect_present_map_row_index,
+            inspect_present_map_row_plane_index,
+            inspect_present_map_row_y,
+            row_words[0],
+            row_words[1],
+            row_words[31],
+            row_words[32],
+            row_words[33],
+            row_words[34],
+            row_words[63]);
+        return 0;
+    }
+
+    if (inspect_present_map_region)
+    {
+        wolf_loaded_present_map present_map;
+        size_t region_word_count = 0;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map(data_path,
+                inspect_present_map_region_index,
+                &present_map,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_region(&present_map.map,
+                inspect_present_map_region_plane_index,
+                inspect_present_map_region_x,
+                inspect_present_map_region_y,
+                inspect_present_map_region_width,
+                inspect_present_map_region_height,
+                region_words,
+                (sizeof(region_words) / sizeof(region_words[0])),
+                &region_word_count))
+        {
+            fputs("could not inspect present map region\n", stderr);
+            return 1;
+        }
+
+        printf("present map%zu plane%zu region%zu,%zu size: %zux%zu\n",
+            inspect_present_map_region_index,
+            inspect_present_map_region_plane_index,
+            inspect_present_map_region_x,
+            inspect_present_map_region_y,
+            inspect_present_map_region_width,
+            inspect_present_map_region_height);
+        printf("present map%zu plane%zu region%zu,%zu cells: [0,0]=%u [1,0]=%u [0,1]=%u [1,1]=%u\n",
+            inspect_present_map_region_index,
+            inspect_present_map_region_plane_index,
+            inspect_present_map_region_x,
+            inspect_present_map_region_y,
+            region_words[0],
+            region_words[1],
+            region_words[2],
+            region_words[3]);
+        (void)region_word_count;
         return 0;
     }
 
