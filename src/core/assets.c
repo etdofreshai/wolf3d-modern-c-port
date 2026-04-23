@@ -933,6 +933,7 @@ bool wolf_map_plane_header_is_valid_for_map(const wolf_map_summary *summary, con
     }
 
     if (header->length < 4
+        || header->carmack_expanded_bytes < 2
         || (header->carmack_expanded_bytes % 2) != 0
         || (header->rlew_expanded_bytes % 2) != 0)
     {
@@ -1026,7 +1027,7 @@ bool wolf_map_plane_headers_are_valid(const wolf_map_summary *summary, const wol
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary)
 {
     size_t i;
-    uint32_t end;
+    uint64_t end;
 
     if (summary == NULL)
     {
@@ -1035,7 +1036,7 @@ bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary)
 
     for (i = 0; i < 3; ++i)
     {
-        end = summary->plane_offsets[i] + summary->plane_lengths[i];
+        end = (uint64_t)summary->plane_offsets[i] + (uint64_t)summary->plane_lengths[i];
         if (end > summary->gamemaps_file_size)
         {
             return false;

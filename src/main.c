@@ -494,6 +494,15 @@ static int run_map_validation_self_test(void)
     puts("map plane header odd size ok");
     valid_header.rlew_expanded_bytes = 8192;
 
+    valid_header.carmack_expanded_bytes = 0;
+    if (wolf_map_plane_header_is_valid_for_map(&valid_summary, &valid_header))
+    {
+        fputs("map plane header missing-carmack-size self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header missing Carmack size ok");
+    valid_header.carmack_expanded_bytes = 3190;
+
     valid_header.decoded_words = 4095;
     if (wolf_map_plane_header_is_valid_for_map(&valid_summary, &valid_header))
     {
@@ -501,6 +510,18 @@ static int run_map_validation_self_test(void)
         return 1;
     }
     puts("map plane header wrong decoded size ok");
+    valid_header.decoded_words = 4096;
+
+    valid_summary.gamemaps_file_size = 0xffffffffu;
+    valid_summary.plane_offsets[0] = 0xfffffff0u;
+    valid_summary.plane_lengths[0] = 0x0020u;
+    valid_summary.plane_offsets[1] = 0xfffffffeu;
+    if (wolf_map_planes_are_in_bounds(&valid_summary))
+    {
+        fputs("map plane bounds overflow self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane bounds overflow ok");
 
     return 0;
 }

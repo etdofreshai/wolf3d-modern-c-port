@@ -28,7 +28,9 @@ for expected in \
   "map plane table valid ok" \
   "map plane table invalid ok" \
   "map plane header odd size ok" \
-  "map plane header wrong decoded size ok"; do
+  "map plane header missing Carmack size ok" \
+  "map plane header wrong decoded size ok" \
+  "map plane bounds overflow ok"; do
   if [[ "$OUTPUT" != *"$expected"* ]]; then
     echo "missing expected output: $expected"
     echo "got: $OUTPUT"
