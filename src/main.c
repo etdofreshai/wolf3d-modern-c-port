@@ -150,6 +150,8 @@ static int run_map_helper_self_test(void)
     size_t index = 0;
     uint16_t column_words[64];
     size_t column_length = 0;
+    uint16_t region_words[12];
+    size_t region_word_count = 0;
     uint16_t cell_value = 0;
     size_t i;
 
@@ -190,6 +192,16 @@ static int run_map_helper_self_test(void)
     }
     printf("map helper column ok: count=%zu top=%u bottom=%u\n", column_length, column_words[0], column_words[2]);
 
+    if (!wolf_map_get_region(&map, 1, 1, 0, 2, 2, region_words, (sizeof(region_words) / sizeof(region_words[0])), &region_word_count)
+        || region_word_count != 4
+        || region_words[0] != 101
+        || region_words[3] != 106)
+    {
+        fputs("map helper region self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper region ok: count=%zu top-left=%u bottom-right=%u\n", region_word_count, region_words[0], region_words[3]);
+
     if (!wolf_map_get_cell(&map, 1, 3, 1, &cell_value) || cell_value != 107)
     {
         fputs("map helper cell self-test failed\n", stderr);
@@ -217,6 +229,13 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     puts("map helper invalid plane ok");
+
+    if (wolf_map_get_region(&map, 1, 3, 2, 2, 2, region_words, (sizeof(region_words) / sizeof(region_words[0])), &region_word_count))
+    {
+        fputs("map helper invalid-region self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper invalid region ok");
 
     return 0;
 }
@@ -416,6 +435,13 @@ int main(int argc, char **argv)
     size_t inspect_map_column_map_index = 0;
     size_t inspect_map_column_plane_index = 0;
     size_t inspect_map_column_x = 0;
+    int inspect_map_region = 0;
+    size_t inspect_map_region_map_index = 0;
+    size_t inspect_map_region_plane_index = 0;
+    size_t inspect_map_region_x = 0;
+    size_t inspect_map_region_y = 0;
+    size_t inspect_map_region_width = 0;
+    size_t inspect_map_region_height = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
@@ -424,6 +450,7 @@ int main(int argc, char **argv)
     wolf_map_plane_load_result plane_load_result;
     wolf_loaded_map loaded_map;
     uint16_t plane_words[64 * 64];
+    uint16_t region_words[64 * 64];
 
     for (i = 1; i < argc; ++i)
     {
@@ -851,6 +878,73 @@ int main(int argc, char **argv)
             inspect_map_column_map_index = (size_t)parsed_map_index;
             inspect_map_column_plane_index = (size_t)parsed_plane_index;
             inspect_map_column_x = (size_t)parsed_x;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-region") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            char *x_end = NULL;
+            char *y_end = NULL;
+            char *width_end = NULL;
+            char *height_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            long parsed_x;
+            long parsed_y;
+            long parsed_width;
+            long parsed_height;
+            if ((i + 6) >= argc)
+            {
+                fputs("--inspect-map-region requires a map index, plane index, x, y, width, and height\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            parsed_x = strtol(argv[++i], &x_end, 10);
+            parsed_y = strtol(argv[++i], &y_end, 10);
+            parsed_width = strtol(argv[++i], &width_end, 10);
+            parsed_height = strtol(argv[++i], &height_end, 10);
+            if (map_end == argv[i - 5] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-map-region map index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i - 4] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--inspect-map-region plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+            if (x_end == argv[i - 3] || *x_end != '\0' || parsed_x < 0)
+            {
+                fputs("--inspect-map-region x must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (y_end == argv[i - 2] || *y_end != '\0' || parsed_y < 0)
+            {
+                fputs("--inspect-map-region y must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (width_end == argv[i - 1] || *width_end != '\0' || parsed_width <= 0)
+            {
+                fputs("--inspect-map-region width must be a positive integer\n", stderr);
+                return 1;
+            }
+            if (height_end == argv[i] || *height_end != '\0' || parsed_height <= 0)
+            {
+                fputs("--inspect-map-region height must be a positive integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_region = 1;
+            inspect_map_region_map_index = (size_t)parsed_map_index;
+            inspect_map_region_plane_index = (size_t)parsed_plane_index;
+            inspect_map_region_x = (size_t)parsed_x;
+            inspect_map_region_y = (size_t)parsed_y;
+            inspect_map_region_width = (size_t)parsed_width;
+            inspect_map_region_height = (size_t)parsed_height;
             continue;
         }
 
@@ -1384,6 +1478,68 @@ int main(int argc, char **argv)
             column_words[33],
             column_words[34],
             column_words[63]);
+        return 0;
+    }
+
+    if (inspect_map_region)
+    {
+        size_t region_word_count = 0;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_map(data_path, inspect_map_region_map_index, &loaded_map, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_region(&loaded_map,
+                inspect_map_region_plane_index,
+                inspect_map_region_x,
+                inspect_map_region_y,
+                inspect_map_region_width,
+                inspect_map_region_height,
+                region_words,
+                (sizeof(region_words) / sizeof(region_words[0])),
+                &region_word_count))
+        {
+            fprintf(stderr,
+                "map region is out of bounds: map=%zu plane=%zu x=%zu y=%zu size=%zux%zu\n",
+                inspect_map_region_map_index,
+                inspect_map_region_plane_index,
+                inspect_map_region_x,
+                inspect_map_region_y,
+                inspect_map_region_width,
+                inspect_map_region_height);
+            return 1;
+        }
+
+        printf("map%zu plane%zu region%zu,%zu size: %zux%zu\n",
+            inspect_map_region_map_index,
+            inspect_map_region_plane_index,
+            inspect_map_region_x,
+            inspect_map_region_y,
+            inspect_map_region_width,
+            inspect_map_region_height);
+        printf("map%zu plane%zu region%zu,%zu cells: [0,0]=%u [%zu,0]=%u [0,%zu]=%u [%zu,%zu]=%u\n",
+            inspect_map_region_map_index,
+            inspect_map_region_plane_index,
+            inspect_map_region_x,
+            inspect_map_region_y,
+            region_words[0],
+            inspect_map_region_width - 1,
+            region_words[inspect_map_region_width - 1],
+            inspect_map_region_height - 1,
+            region_words[(inspect_map_region_height - 1) * inspect_map_region_width],
+            inspect_map_region_width - 1,
+            inspect_map_region_height - 1,
+            region_words[region_word_count - 1]);
         return 0;
     }
 

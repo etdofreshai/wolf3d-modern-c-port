@@ -66,6 +66,9 @@ fi
 if [[ -x "$ROOT/tests/map_column_inspection.sh" ]]; then
   "$ROOT/tests/map_column_inspection.sh"
 fi
+if [[ -x "$ROOT/tests/map_region_inspection.sh" ]]; then
+  "$ROOT/tests/map_region_inspection.sh"
+fi
 if [[ -x "$ROOT/tests/map_plane_table_inspection.sh" ]]; then
   "$ROOT/tests/map_plane_table_inspection.sh"
 fi

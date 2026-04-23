@@ -72,6 +72,7 @@ bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, si
 bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, const uint16_t **words, size_t *word_count);
 bool wolf_map_get_row(const wolf_loaded_map *map, size_t plane_index, size_t y, const uint16_t **row_words, size_t *row_length);
 bool wolf_map_get_column(const wolf_loaded_map *map, size_t plane_index, size_t x, uint16_t *column_words, size_t column_capacity, size_t *column_length);
+bool wolf_map_get_region(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t *region_words, size_t region_capacity, size_t *region_word_count);
 bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value);
 
 #endif

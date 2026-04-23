@@ -989,6 +989,52 @@ bool wolf_map_get_column(const wolf_loaded_map *map, size_t plane_index, size_t 
     return true;
 }
 
+bool wolf_map_get_region(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t *region_words, size_t region_capacity, size_t *region_word_count)
+{
+    const uint16_t *words;
+    size_t word_count;
+    size_t row;
+    size_t column;
+    size_t write_index = 0;
+
+    if (map == NULL || region_words == NULL || region_word_count == NULL)
+    {
+        return false;
+    }
+
+    if (!wolf_map_get_plane_words(map, plane_index, &words, &word_count))
+    {
+        return false;
+    }
+
+    if (region_width == 0
+        || region_height == 0
+        || x >= map->summary.width
+        || y >= map->summary.height
+        || region_width > ((size_t)map->summary.width - x)
+        || region_height > ((size_t)map->summary.height - y)
+        || region_capacity < (region_width * region_height))
+    {
+        return false;
+    }
+
+    for (row = 0; row < region_height; ++row)
+    {
+        for (column = 0; column < region_width; ++column)
+        {
+            size_t index = ((y + row) * (size_t)map->summary.width) + (x + column);
+            if (index >= word_count)
+            {
+                return false;
+            }
+            region_words[write_index++] = words[index];
+        }
+    }
+
+    *region_word_count = write_index;
+    return true;
+}
+
 bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value)
 {
     size_t index;
