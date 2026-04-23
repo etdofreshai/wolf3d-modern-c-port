@@ -602,6 +602,41 @@ static bool wolf_find_present_map_slot(const char *data_dir, size_t present_inde
     return false;
 }
 
+bool wolf_read_present_map_summary(const char *data_dir, size_t present_index, wolf_present_map_summary *entry, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
+{
+    size_t slot_index;
+    wolf_map_presence_summary local_presence_summary;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || entry == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect present map");
+        return false;
+    }
+
+    if (!wolf_find_present_map_slot(data_dir, present_index, &slot_index, &local_presence_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    entry->slot_index = slot_index;
+    if (!wolf_read_map_summary(data_dir, slot_index, &entry->summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (presence_summary != NULL)
+    {
+        *presence_summary = local_presence_summary;
+    }
+
+    return true;
+}
+
 bool wolf_load_present_map(const char *data_dir, size_t present_index, wolf_loaded_present_map *entry, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
 {
     size_t slot_index;
@@ -1298,6 +1333,45 @@ bool wolf_read_map_plane_headers(const char *data_dir, size_t map_index, wolf_ma
         {
             return false;
         }
+    }
+
+    return true;
+}
+
+bool wolf_read_present_map_plane_headers(const char *data_dir, size_t present_index, wolf_present_map_summary *entry, wolf_map_plane_header headers[3], wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_present_map_summary local_entry;
+    wolf_map_presence_summary local_presence_summary;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || headers == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect present map plane table");
+        return false;
+    }
+
+    if (!wolf_read_present_map_summary(data_dir, present_index, &local_entry, &local_presence_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (!wolf_read_map_plane_headers(data_dir, local_entry.slot_index, headers, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (entry != NULL)
+    {
+        *entry = local_entry;
+    }
+
+    if (presence_summary != NULL)
+    {
+        *presence_summary = local_presence_summary;
     }
 
     return true;
