@@ -527,6 +527,8 @@ int main(int argc, char **argv)
     size_t validate_map_catalog_count = 0;
     int validate_present_map_catalog = 0;
     size_t validate_present_map_catalog_count = 0;
+    int validate_present_map_load_catalog = 0;
+    size_t validate_present_map_load_catalog_count = 0;
     int validate_map_header = 0;
     size_t validate_map_header_index = 0;
     int validate_map_plane_header = 0;
@@ -768,6 +770,28 @@ int main(int argc, char **argv)
 
             validate_present_map_catalog = 1;
             validate_present_map_catalog_count = (size_t)parsed_count;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--validate-present-map-load-catalog") == 0)
+        {
+            char *end = NULL;
+            long parsed_count;
+            if ((i + 1) >= argc)
+            {
+                fputs("--validate-present-map-load-catalog requires a count\n", stderr);
+                return 1;
+            }
+
+            parsed_count = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_count < 0)
+            {
+                fputs("--validate-present-map-load-catalog count must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            validate_present_map_load_catalog = 1;
+            validate_present_map_load_catalog_count = (size_t)parsed_count;
             continue;
         }
 
@@ -1662,6 +1686,72 @@ int main(int argc, char **argv)
         {
             printf("present map%zu slot: %zu\n", map_index, slot_indices[map_index]);
             printf("present map%zu validation: %s\n", map_index, valid_flags[map_index] ? "yes" : "no");
+        }
+
+        free(slot_indices);
+        free(valid_flags);
+        return all_valid ? 0 : 1;
+    }
+
+    if (validate_present_map_load_catalog)
+    {
+        size_t *slot_indices = NULL;
+        bool *valid_flags = NULL;
+        size_t validated_count = 0;
+        size_t map_index;
+        int all_valid = 1;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        slot_indices = (size_t *)calloc(validate_present_map_load_catalog_count == 0 ? 1 : validate_present_map_load_catalog_count, sizeof(size_t));
+        valid_flags = (bool *)calloc(validate_present_map_load_catalog_count == 0 ? 1 : validate_present_map_load_catalog_count, sizeof(bool));
+        if (slot_indices == NULL || valid_flags == NULL)
+        {
+            free(slot_indices);
+            free(valid_flags);
+            fputs("out of memory allocating present map load catalog validation buffers\n", stderr);
+            return 1;
+        }
+
+        if (!wolf_validate_present_map_load_catalog(data_path,
+                validate_present_map_load_catalog_count,
+                slot_indices,
+                valid_flags,
+                validate_present_map_load_catalog_count,
+                &validated_count,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            free(slot_indices);
+            free(valid_flags);
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        for (map_index = 0; map_index < validated_count; ++map_index)
+        {
+            if (!valid_flags[map_index])
+            {
+                all_valid = 0;
+                break;
+            }
+        }
+
+        printf("present map load catalog validation total slots: %zu\n", map_presence_summary.total_slots);
+        printf("present map load catalog validation total present: %zu\n", map_presence_summary.present_slots);
+        printf("present map load catalog validation count: %zu\n", validated_count);
+        printf("present map load catalog validation all valid: %s\n", all_valid ? "yes" : "no");
+        for (map_index = 0; map_index < validated_count; ++map_index)
+        {
+            printf("present map load%zu slot: %zu\n", map_index, slot_indices[map_index]);
+            printf("present map load%zu validation: %s\n", map_index, valid_flags[map_index] ? "yes" : "no");
         }
 
         free(slot_indices);
