@@ -1321,7 +1321,7 @@ bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary)
     size_t i;
     uint64_t end;
 
-    if (summary == NULL)
+    if (!wolf_map_header_is_valid(summary) || summary->gamemaps_file_size == 0)
     {
         return false;
     }

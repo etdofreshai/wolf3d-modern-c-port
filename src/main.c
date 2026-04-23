@@ -699,6 +699,28 @@ static int run_map_validation_self_test(void)
     puts("map plane header wrong decoded size ok");
     valid_header.decoded_words = 4096;
 
+    valid_summary.gamemaps_file_size = 4096;
+    valid_summary.plane_offsets[0] = 11;
+    valid_summary.plane_offsets[1] = 1445;
+    valid_summary.plane_offsets[2] = 2240;
+    valid_summary.plane_lengths[0] = 1434;
+    valid_summary.plane_lengths[1] = 795;
+    valid_summary.plane_lengths[2] = 10;
+    if (!wolf_map_planes_are_in_bounds(&valid_summary))
+    {
+        fputs("map plane bounds valid self-test failed\n", stderr);
+        return 1;
+    }
+
+    valid_summary.plane_lengths[2] = 0;
+    if (wolf_map_planes_are_in_bounds(&valid_summary))
+    {
+        fputs("map plane bounds invalid-summary self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane bounds reject invalid summary ok");
+    valid_summary.plane_lengths[2] = 10;
+
     valid_summary.gamemaps_file_size = 0xffffffffu;
     valid_summary.plane_offsets[0] = 0xfffffff0u;
     valid_summary.plane_lengths[0] = 0x0020u;
