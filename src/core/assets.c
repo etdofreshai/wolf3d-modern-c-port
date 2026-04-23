@@ -482,6 +482,99 @@ bool wolf_read_map_catalog(const char *data_dir, size_t count, wolf_map_summary 
     return true;
 }
 
+bool wolf_validate_map(const char *data_dir, size_t map_index, wolf_map_summary *summary, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size)
+{
+    wolf_map_summary local_summary;
+    wolf_map_plane_header local_headers[3];
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not validate map");
+        return false;
+    }
+
+    if (!wolf_read_map_summary(data_dir, map_index, &local_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (!wolf_map_header_is_valid(&local_summary) || !wolf_map_planes_are_in_bounds(&local_summary))
+    {
+        set_error(error_buffer, error_buffer_size, "map header is invalid");
+        return false;
+    }
+
+    if (!wolf_read_map_plane_headers(data_dir, map_index, local_headers, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (!wolf_map_plane_headers_are_valid(&local_summary, local_headers))
+    {
+        set_error(error_buffer, error_buffer_size, "map plane table is invalid");
+        return false;
+    }
+
+    if (summary != NULL)
+    {
+        *summary = local_summary;
+    }
+
+    if (headers != NULL)
+    {
+        memcpy(headers, local_headers, sizeof(local_headers));
+    }
+
+    return true;
+}
+
+bool wolf_validate_map_catalog(const char *data_dir, size_t count, bool *valid_flags, size_t valid_flags_count, size_t *validated_count, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_maphead_summary maphead_summary;
+    size_t index;
+    size_t limit;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || valid_flags == NULL || validated_count == NULL || count > valid_flags_count)
+    {
+        set_error(error_buffer, error_buffer_size, "could not validate map catalog");
+        return false;
+    }
+
+    if (!wolf_read_maphead_summary(data_dir, &maphead_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    limit = count;
+    if (limit > maphead_summary.map_count)
+    {
+        limit = maphead_summary.map_count;
+    }
+
+    for (index = 0; index < limit; ++index)
+    {
+        valid_flags[index] = false;
+        if (!wolf_validate_map(data_dir, index, NULL, NULL, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+        valid_flags[index] = true;
+    }
+
+    *validated_count = limit;
+    return true;
+}
+
 bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size)
 {
     return wolf_read_map_summary(data_dir, 0, summary, error_buffer, error_buffer_size);

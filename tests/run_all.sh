@@ -60,6 +60,9 @@ fi
 if [[ -x "$ROOT/tests/map_catalog_inspection.sh" ]]; then
   "$ROOT/tests/map_catalog_inspection.sh"
 fi
+if [[ -x "$ROOT/tests/map_catalog_validation.sh" ]]; then
+  "$ROOT/tests/map_catalog_validation.sh"
+fi
 if [[ -x "$ROOT/tests/map_cell_inspection.sh" ]]; then
   "$ROOT/tests/map_cell_inspection.sh"
 fi

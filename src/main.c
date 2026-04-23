@@ -399,6 +399,8 @@ int main(int argc, char **argv)
     int inspect_map_presence_summary = 0;
     int inspect_map_catalog = 0;
     size_t inspect_map_catalog_count = 0;
+    int validate_map_catalog = 0;
+    size_t validate_map_catalog_count = 0;
     int validate_map_header = 0;
     size_t validate_map_header_index = 0;
     int validate_map_plane_header = 0;
@@ -549,6 +551,28 @@ int main(int argc, char **argv)
 
             inspect_map_catalog = 1;
             inspect_map_catalog_count = (size_t)parsed_count;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--validate-map-catalog") == 0)
+        {
+            char *end = NULL;
+            long parsed_count;
+            if ((i + 1) >= argc)
+            {
+                fputs("--validate-map-catalog requires a count\n", stderr);
+                return 1;
+            }
+
+            parsed_count = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_count < 0)
+            {
+                fputs("--validate-map-catalog count must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            validate_map_catalog = 1;
+            validate_map_catalog_count = (size_t)parsed_count;
             continue;
         }
 
@@ -1175,6 +1199,61 @@ int main(int argc, char **argv)
 
         free(catalog);
         return 0;
+    }
+
+    if (validate_map_catalog)
+    {
+        bool *valid_flags = NULL;
+        size_t validated_count = 0;
+        size_t map_index;
+        int all_valid = 1;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        valid_flags = (bool *)calloc(validate_map_catalog_count == 0 ? 1 : validate_map_catalog_count, sizeof(bool));
+        if (valid_flags == NULL)
+        {
+            fputs("out of memory allocating map catalog validation flags\n", stderr);
+            return 1;
+        }
+
+        if (!wolf_validate_map_catalog(data_path,
+                validate_map_catalog_count,
+                valid_flags,
+                validate_map_catalog_count,
+                &validated_count,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            free(valid_flags);
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        for (map_index = 0; map_index < validated_count; ++map_index)
+        {
+            if (!valid_flags[map_index])
+            {
+                all_valid = 0;
+                break;
+            }
+        }
+
+        printf("map catalog validation count: %zu\n", validated_count);
+        printf("map catalog validation all valid: %s\n", all_valid ? "yes" : "no");
+        for (map_index = 0; map_index < validated_count; ++map_index)
+        {
+            printf("map%zu validation: %s\n", map_index, valid_flags[map_index] ? "yes" : "no");
+        }
+
+        free(valid_flags);
+        return all_valid ? 0 : 1;
     }
 
     if (validate_map_header)
