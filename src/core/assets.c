@@ -1609,6 +1609,86 @@ bool wolf_read_map_plane_table_catalog(const char *data_dir, size_t count, wolf_
     return true;
 }
 
+bool wolf_read_present_map_plane_table(const char *data_dir, size_t present_index, wolf_present_map_plane_table *table, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_present_map_summary present_map;
+    wolf_map_presence_summary local_presence_summary;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || table == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect present map plane table");
+        return false;
+    }
+
+    if (!wolf_read_present_map_summary(data_dir, present_index, &present_map, &local_presence_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    table->slot_index = present_map.slot_index;
+    if (!wolf_read_map_plane_table(data_dir, present_map.slot_index, &table->table, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (presence_summary != NULL)
+    {
+        *presence_summary = local_presence_summary;
+    }
+
+    return true;
+}
+
+bool wolf_read_present_map_plane_table_catalog(const char *data_dir, size_t count, wolf_present_map_plane_table *tables, size_t tables_count, size_t *loaded_count, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_map_presence_summary local_presence_summary;
+    size_t index;
+    size_t limit;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || tables == NULL || loaded_count == NULL || count > tables_count)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect present map plane table catalog");
+        return false;
+    }
+
+    if (!wolf_read_map_presence_summary(data_dir, &local_presence_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    limit = count;
+    if (limit > local_presence_summary.present_slots)
+    {
+        limit = local_presence_summary.present_slots;
+    }
+
+    for (index = 0; index < limit; ++index)
+    {
+        if (!wolf_read_present_map_plane_table(data_dir, index, &tables[index], NULL, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+    }
+
+    *loaded_count = limit;
+    if (presence_summary != NULL)
+    {
+        *presence_summary = local_presence_summary;
+    }
+
+    return true;
+}
+
 bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_size, uint16_t rlew_tag, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size)
 {
     uint16_t *carmack_words;

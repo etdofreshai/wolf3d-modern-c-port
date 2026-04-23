@@ -123,6 +123,9 @@ fi
 if [[ -x "$ROOT/tests/present_map_plane_table_inspection.sh" ]]; then
   "$ROOT/tests/present_map_plane_table_inspection.sh"
 fi
+if [[ -x "$ROOT/tests/present_map_plane_table_catalog.sh" ]]; then
+  "$ROOT/tests/present_map_plane_table_catalog.sh"
+fi
 if [[ -x "$ROOT/tests/present_map_column_inspection.sh" ]]; then
   "$ROOT/tests/present_map_column_inspection.sh"
 fi

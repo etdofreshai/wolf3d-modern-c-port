@@ -826,6 +826,8 @@ int main(int argc, char **argv)
     size_t inspect_map_plane_table_catalog_count = 0;
     int inspect_present_map_plane_table = 0;
     size_t inspect_present_map_plane_table_index = 0;
+    int inspect_present_map_plane_table_catalog = 0;
+    size_t inspect_present_map_plane_table_catalog_count = 0;
     int inspect_map_overview = 0;
     size_t inspect_map_overview_index = 0;
     int inspect_first_map_load = 0;
@@ -857,6 +859,7 @@ int main(int argc, char **argv)
     wolf_map_plane_header plane_header;
     wolf_map_plane_header plane_headers[3];
     wolf_map_plane_table plane_table_catalog[100];
+    wolf_present_map_plane_table present_plane_table_catalog[100];
     wolf_map_plane_load_result plane_load_result;
     wolf_loaded_map loaded_map;
     uint16_t plane_words[64 * 64];
@@ -1616,6 +1619,28 @@ int main(int argc, char **argv)
 
             inspect_present_map_plane_table = 1;
             inspect_present_map_plane_table_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-plane-table-catalog") == 0)
+        {
+            char *end = NULL;
+            long parsed_count;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-present-map-plane-table-catalog requires a count\n", stderr);
+                return 1;
+            }
+
+            parsed_count = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_count < 0)
+            {
+                fputs("--inspect-present-map-plane-table-catalog count must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_plane_table_catalog = 1;
+            inspect_present_map_plane_table_catalog_count = (size_t)parsed_count;
             continue;
         }
 
@@ -3502,6 +3527,58 @@ int main(int argc, char **argv)
                 plane_table.headers[plane_index].carmack_expanded_bytes,
                 plane_table.headers[plane_index].rlew_expanded_bytes,
                 plane_table.headers[plane_index].decoded_words);
+        }
+        return 0;
+    }
+
+    if (inspect_present_map_plane_table_catalog)
+    {
+        size_t loaded_count = 0;
+        size_t map_index;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_present_map_plane_table_catalog(data_path,
+                inspect_present_map_plane_table_catalog_count,
+                present_plane_table_catalog,
+                (sizeof(present_plane_table_catalog) / sizeof(present_plane_table_catalog[0])),
+                &loaded_count,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("present map plane table catalog total slots: %zu\n", map_presence_summary.total_slots);
+        printf("present map plane table catalog total present: %zu\n", map_presence_summary.present_slots);
+        for (map_index = 0; map_index < loaded_count; ++map_index)
+        {
+            size_t plane_index;
+
+            printf("present map plane table%zu slot: %zu\n", map_index, present_plane_table_catalog[map_index].slot_index);
+            printf("present map plane table%zu name: %s\n", map_index, present_plane_table_catalog[map_index].table.summary.name);
+            printf("present map plane table%zu header valid: %s\n",
+                map_index,
+                wolf_map_plane_headers_are_valid(&present_plane_table_catalog[map_index].table.summary, present_plane_table_catalog[map_index].table.headers) ? "yes" : "no");
+            for (plane_index = 0; plane_index < 3; ++plane_index)
+            {
+                printf("present map plane%zu table%zu offset: %u length: %u carmack: %u rlew: %u words: %zu\n",
+                    plane_index,
+                    map_index,
+                    present_plane_table_catalog[map_index].table.headers[plane_index].offset,
+                    present_plane_table_catalog[map_index].table.headers[plane_index].length,
+                    present_plane_table_catalog[map_index].table.headers[plane_index].carmack_expanded_bytes,
+                    present_plane_table_catalog[map_index].table.headers[plane_index].rlew_expanded_bytes,
+                    present_plane_table_catalog[map_index].table.headers[plane_index].decoded_words);
+            }
         }
         return 0;
     }
