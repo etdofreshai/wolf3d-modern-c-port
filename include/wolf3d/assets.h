@@ -48,6 +48,12 @@ typedef struct wolf_map_plane_header
     size_t decoded_words;
 } wolf_map_plane_header;
 
+typedef struct wolf_map_plane_table
+{
+    wolf_map_summary summary;
+    wolf_map_plane_header headers[3];
+} wolf_map_plane_table;
+
 typedef struct wolf_map_plane_load_result
 {
     uint16_t compressed_bytes;
@@ -100,6 +106,8 @@ bool wolf_first_map_planes_are_in_bounds(const wolf_map_summary *summary);
 bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t plane_index, wolf_map_plane_header *header, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_plane_headers(const char *data_dir, size_t map_index, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size);
 bool wolf_read_present_map_plane_headers(const char *data_dir, size_t present_index, wolf_present_map_summary *entry, wolf_map_plane_header headers[3], wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);
+bool wolf_read_map_plane_table(const char *data_dir, size_t map_index, wolf_map_plane_table *table, char *error_buffer, size_t error_buffer_size);
+bool wolf_read_map_plane_table_catalog(const char *data_dir, size_t count, wolf_map_plane_table *tables, size_t tables_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_t *dest, size_t dest_words, uint16_t rlew_tag);
 bool wolf_carmack_expand_bytes(const uint8_t *source, size_t source_size, uint16_t *dest, size_t dest_words);
 bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_size, uint16_t rlew_tag, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size);

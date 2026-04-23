@@ -1537,6 +1537,77 @@ bool wolf_read_present_map_plane_headers(const char *data_dir, size_t present_in
     return true;
 }
 
+bool wolf_read_map_plane_table(const char *data_dir, size_t map_index, wolf_map_plane_table *table, char *error_buffer, size_t error_buffer_size)
+{
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || table == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect map plane table");
+        return false;
+    }
+
+    if (!wolf_read_map_summary(data_dir, map_index, &table->summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (!wolf_read_map_plane_headers(data_dir, map_index, table->headers, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool wolf_read_map_plane_table_catalog(const char *data_dir, size_t count, wolf_map_plane_table *tables, size_t tables_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_maphead_summary local_maphead;
+    size_t index;
+    size_t limit;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || tables == NULL || loaded_count == NULL || count > tables_count)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect map plane table catalog");
+        return false;
+    }
+
+    if (!wolf_read_maphead_summary(data_dir, &local_maphead, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    limit = count;
+    if (limit > local_maphead.map_count)
+    {
+        limit = local_maphead.map_count;
+    }
+
+    for (index = 0; index < limit; ++index)
+    {
+        if (!wolf_read_map_plane_table(data_dir, index, &tables[index], error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+    }
+
+    *loaded_count = limit;
+    if (maphead_summary != NULL)
+    {
+        *maphead_summary = local_maphead;
+    }
+
+    return true;
+}
+
 bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_size, uint16_t rlew_tag, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size)
 {
     uint16_t *carmack_words;
