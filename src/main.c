@@ -531,6 +531,8 @@ int main(int argc, char **argv)
     size_t validate_present_map_load_catalog_count = 0;
     int validate_map_header = 0;
     size_t validate_map_header_index = 0;
+    int validate_map_load = 0;
+    size_t validate_map_load_index = 0;
     int validate_map_plane_header = 0;
     size_t validate_map_plane_header_map_index = 0;
     size_t validate_map_plane_header_index = 0;
@@ -814,6 +816,28 @@ int main(int argc, char **argv)
 
             validate_map_header = 1;
             validate_map_header_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--validate-map-load") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--validate-map-load requires an index\n", stderr);
+                return 1;
+            }
+
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_index < 0)
+            {
+                fputs("--validate-map-load index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            validate_map_load = 1;
+            validate_map_load_index = (size_t)parsed_index;
             continue;
         }
 
@@ -1787,6 +1811,44 @@ int main(int argc, char **argv)
         printf("map%zu name: %s\n", validate_map_header_index, map_summary.name);
         printf("map%zu size: %ux%u\n", validate_map_header_index, map_summary.width, map_summary.height);
         return (wolf_map_header_is_valid(&map_summary) && wolf_map_planes_are_in_bounds(&map_summary)) ? 0 : 1;
+    }
+
+    if (validate_map_load)
+    {
+        size_t plane_index;
+        int all_valid = 1;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_validate_map_load(data_path, validate_map_load_index, &loaded_map, plane_headers, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("map%zu load valid: yes\n", validate_map_load_index);
+        printf("map%zu load name: %s\n", validate_map_load_index, loaded_map.summary.name);
+        printf("map%zu load size: %ux%u\n", validate_map_load_index, loaded_map.summary.width, loaded_map.summary.height);
+        printf("map%zu load plane table valid: %s\n",
+            validate_map_load_index,
+            wolf_map_plane_headers_are_valid(&loaded_map.summary, plane_headers) ? "yes" : "no");
+        for (plane_index = 0; plane_index < 3; ++plane_index)
+        {
+            int plane_valid = wolf_map_plane_load_result_matches_header(&plane_headers[plane_index], &loaded_map.plane_results[plane_index]);
+            printf("map%zu plane%zu load result match: %s\n", validate_map_load_index, plane_index, plane_valid ? "yes" : "no");
+            if (!plane_valid)
+            {
+                all_valid = 0;
+            }
+        }
+
+        return all_valid ? 0 : 1;
     }
 
     if (validate_map_plane_header)
