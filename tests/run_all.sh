@@ -84,5 +84,8 @@ fi
 if [[ -x "$ROOT/tests/present_map_catalog.sh" ]]; then
   "$ROOT/tests/present_map_catalog.sh"
 fi
+if [[ -x "$ROOT/tests/present_map_catalog_validation.sh" ]]; then
+  "$ROOT/tests/present_map_catalog_validation.sh"
+fi
 
 echo "all automated checks passed"
