@@ -21,6 +21,8 @@ for expected in \
   "carmack literal ok: 1234 a755 a866" \
   "carmack near copy ok: 1111 2222 1111 2222" \
   "carmack far copy ok: aaaa bbbb cccc aaaa bbbb" \
+  "carmack near escape ok: a712" \
+  "carmack far escape ok: a834" \
   "carmack invalid near ok"; do
   if [[ "$OUTPUT" != *"$expected"* ]]; then
     echo "missing expected output: $expected"

@@ -954,6 +954,41 @@ bool wolf_map_get_row(const wolf_loaded_map *map, size_t plane_index, size_t y, 
     return true;
 }
 
+bool wolf_map_get_column(const wolf_loaded_map *map, size_t plane_index, size_t x, uint16_t *column_words, size_t column_capacity, size_t *column_length)
+{
+    const uint16_t *words;
+    size_t word_count;
+    size_t y;
+
+    if (map == NULL || column_words == NULL || column_length == NULL)
+    {
+        return false;
+    }
+
+    if (!wolf_map_get_plane_words(map, plane_index, &words, &word_count))
+    {
+        return false;
+    }
+
+    if (x >= map->summary.width || column_capacity < map->summary.height)
+    {
+        return false;
+    }
+
+    for (y = 0; y < map->summary.height; ++y)
+    {
+        size_t index = (y * (size_t)map->summary.width) + x;
+        if (index >= word_count)
+        {
+            return false;
+        }
+        column_words[y] = words[index];
+    }
+
+    *column_length = (size_t)map->summary.height;
+    return true;
+}
+
 bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value)
 {
     size_t index;

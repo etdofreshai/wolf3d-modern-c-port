@@ -27,6 +27,10 @@ static int run_carmack_self_test(void)
         0xbb, 0xbb,
         0xcc, 0xcc,
         0x02, 0xa8, 0x00, 0x00};
+    static const uint8_t near_escape_encoded[] = {
+        0x00, 0xa7, 0x12};
+    static const uint8_t far_escape_encoded[] = {
+        0x00, 0xa8, 0x34};
     static const uint8_t invalid_near_encoded[] = {
         0x11, 0x11,
         0x01, 0xa7, 0x02};
@@ -64,6 +68,22 @@ static int run_carmack_self_test(void)
         return 1;
     }
     printf("carmack far copy ok: %04x %04x %04x %04x %04x\n", decoded[0], decoded[1], decoded[2], decoded[3], decoded[4]);
+
+    if (!wolf_carmack_expand_bytes(near_escape_encoded, sizeof(near_escape_encoded), decoded, 1)
+        || decoded[0] != 0xa712)
+    {
+        fputs("carmack near-escape self-test failed\n", stderr);
+        return 1;
+    }
+    printf("carmack near escape ok: %04x\n", decoded[0]);
+
+    if (!wolf_carmack_expand_bytes(far_escape_encoded, sizeof(far_escape_encoded), decoded, 1)
+        || decoded[0] != 0xa834)
+    {
+        fputs("carmack far-escape self-test failed\n", stderr);
+        return 1;
+    }
+    printf("carmack far escape ok: %04x\n", decoded[0]);
 
     if (wolf_carmack_expand_bytes(invalid_near_encoded, sizeof(invalid_near_encoded), decoded, 2))
     {
@@ -128,6 +148,8 @@ static int run_map_helper_self_test(void)
     const uint16_t *plane_words = NULL;
     size_t word_count = 0;
     size_t index = 0;
+    uint16_t column_words[64];
+    size_t column_length = 0;
     uint16_t cell_value = 0;
     size_t i;
 
@@ -157,6 +179,16 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     printf("map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[11]);
+
+    if (!wolf_map_get_column(&map, 1, 2, column_words, (sizeof(column_words) / sizeof(column_words[0])), &column_length)
+        || column_length != 3
+        || column_words[0] != 102
+        || column_words[2] != 110)
+    {
+        fputs("map helper column self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper column ok: count=%zu top=%u bottom=%u\n", column_length, column_words[0], column_words[2]);
 
     if (!wolf_map_get_cell(&map, 1, 3, 1, &cell_value) || cell_value != 107)
     {
@@ -380,6 +412,10 @@ int main(int argc, char **argv)
     size_t inspect_map_row_map_index = 0;
     size_t inspect_map_row_plane_index = 0;
     size_t inspect_map_row_y = 0;
+    int inspect_map_column = 0;
+    size_t inspect_map_column_map_index = 0;
+    size_t inspect_map_column_plane_index = 0;
+    size_t inspect_map_column_x = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
     wolf_map_summary map_summary;
@@ -775,6 +811,46 @@ int main(int argc, char **argv)
             inspect_map_row_map_index = (size_t)parsed_map_index;
             inspect_map_row_plane_index = (size_t)parsed_plane_index;
             inspect_map_row_y = (size_t)parsed_y;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-column") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            char *x_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            long parsed_x;
+            if ((i + 3) >= argc)
+            {
+                fputs("--inspect-map-column requires a map index, plane index, and x\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            parsed_x = strtol(argv[++i], &x_end, 10);
+            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-map-column map index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i - 1] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--inspect-map-column plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+            if (x_end == argv[i] || *x_end != '\0' || parsed_x < 0)
+            {
+                fputs("--inspect-map-column x must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_column = 1;
+            inspect_map_column_map_index = (size_t)parsed_map_index;
+            inspect_map_column_plane_index = (size_t)parsed_plane_index;
+            inspect_map_column_x = (size_t)parsed_x;
             continue;
         }
 
@@ -1255,6 +1331,59 @@ int main(int argc, char **argv)
             row_words[33],
             row_words[34],
             row_words[63]);
+        return 0;
+    }
+
+    if (inspect_map_column)
+    {
+        uint16_t column_words[64];
+        size_t column_length = 0;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_map(data_path, inspect_map_column_map_index, &loaded_map, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_column(&loaded_map,
+                inspect_map_column_plane_index,
+                inspect_map_column_x,
+                column_words,
+                (sizeof(column_words) / sizeof(column_words[0])),
+                &column_length))
+        {
+            fprintf(stderr,
+                "map column is out of bounds: map=%zu plane=%zu x=%zu\n",
+                inspect_map_column_map_index,
+                inspect_map_column_plane_index,
+                inspect_map_column_x);
+            return 1;
+        }
+
+        printf("map%zu plane%zu column%zu length: %zu\n",
+            inspect_map_column_map_index,
+            inspect_map_column_plane_index,
+            inspect_map_column_x,
+            column_length);
+        printf("map%zu plane%zu column%zu cells: [0]=%u [1]=%u [31]=%u [32]=%u [33]=%u [34]=%u [63]=%u\n",
+            inspect_map_column_map_index,
+            inspect_map_column_plane_index,
+            inspect_map_column_x,
+            column_words[0],
+            column_words[1],
+            column_words[31],
+            column_words[32],
+            column_words[33],
+            column_words[34],
+            column_words[63]);
         return 0;
     }
 
