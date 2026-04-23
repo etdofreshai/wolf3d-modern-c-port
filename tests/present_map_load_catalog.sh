@@ -25,12 +25,20 @@ for expected in \
   "present map load0 name: Wolf1 Map1" \
   "present map load0 size: 64x64" \
   "present map load0 plane0 result: compressed=1434 carmack=3190 rlew=8192 words=4096" \
+  "present map load0 plane1 result: compressed=795 carmack=1128 rlew=8192 words=4096" \
+  "present map load0 plane2 result: compressed=10 carmack=8 rlew=8192 words=4096" \
   "present map load0 plane0 sample cells: [0,0]=1 [31,31]=108 [32,32]=108 [63,63]=1" \
+  "present map load0 plane1 sample cells: [0,0]=0 [31,31]=0 [32,32]=0 [63,63]=0" \
+  "present map load0 plane2 sample cells: [0,0]=0 [31,31]=0 [32,32]=0 [63,63]=0" \
   "present map load1 slot: 1" \
   "present map load1 name: Wolf1 Map2" \
   "present map load1 size: 64x64" \
   "present map load1 plane0 result: compressed=1732 carmack=4236 rlew=8192 words=4096" \
-  "present map load1 plane0 sample cells: [0,0]=1 [31,31]=120 [32,32]=1 [63,63]=1"; do
+  "present map load1 plane1 result: compressed=1757 carmack=2878 rlew=8192 words=4096" \
+  "present map load1 plane2 result: compressed=10 carmack=8 rlew=8192 words=4096" \
+  "present map load1 plane0 sample cells: [0,0]=1 [31,31]=120 [32,32]=1 [63,63]=1" \
+  "present map load1 plane1 sample cells: [0,0]=0 [31,31]=0 [32,32]=0 [63,63]=0" \
+  "present map load1 plane2 sample cells: [0,0]=0 [31,31]=0 [32,32]=0 [63,63]=0"; do
   if [[ "$OUTPUT" != *"$expected"* ]]; then
     echo "missing expected present-map load output: $expected"
     echo "got: $OUTPUT"

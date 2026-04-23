@@ -1536,36 +1536,43 @@ int main(int argc, char **argv)
         printf("present map load catalog total present: %zu\n", map_presence_summary.present_slots);
         for (map_index = 0; map_index < loaded_count; ++map_index)
         {
-            uint16_t top_left = 0;
-            uint16_t mid_left = 0;
-            uint16_t center = 0;
-            uint16_t bottom_right = 0;
-
-            if (!wolf_map_get_cell(&catalog[map_index].map, 0, 0, 0, &top_left)
-                || !wolf_map_get_cell(&catalog[map_index].map, 0, 31, 31, &mid_left)
-                || !wolf_map_get_cell(&catalog[map_index].map, 0, 32, 32, &center)
-                || !wolf_map_get_cell(&catalog[map_index].map, 0, 63, 63, &bottom_right))
-            {
-                free(catalog);
-                fputs("could not sample loaded present map\n", stderr);
-                return 1;
-            }
+            size_t plane_index;
 
             printf("present map load%zu slot: %zu\n", map_index, catalog[map_index].slot_index);
             printf("present map load%zu name: %s\n", map_index, catalog[map_index].map.summary.name);
             printf("present map load%zu size: %ux%u\n", map_index, catalog[map_index].map.summary.width, catalog[map_index].map.summary.height);
-            printf("present map load%zu plane0 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-                map_index,
-                catalog[map_index].map.plane_results[0].compressed_bytes,
-                catalog[map_index].map.plane_results[0].carmack_expanded_bytes,
-                catalog[map_index].map.plane_results[0].rlew_expanded_bytes,
-                catalog[map_index].map.plane_results[0].decoded_words);
-            printf("present map load%zu plane0 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-                map_index,
-                top_left,
-                mid_left,
-                center,
-                bottom_right);
+            for (plane_index = 0; plane_index < 3; ++plane_index)
+            {
+                uint16_t top_left = 0;
+                uint16_t mid_left = 0;
+                uint16_t center = 0;
+                uint16_t bottom_right = 0;
+
+                if (!wolf_map_get_cell(&catalog[map_index].map, plane_index, 0, 0, &top_left)
+                    || !wolf_map_get_cell(&catalog[map_index].map, plane_index, 31, 31, &mid_left)
+                    || !wolf_map_get_cell(&catalog[map_index].map, plane_index, 32, 32, &center)
+                    || !wolf_map_get_cell(&catalog[map_index].map, plane_index, 63, 63, &bottom_right))
+                {
+                    free(catalog);
+                    fputs("could not sample loaded present map\n", stderr);
+                    return 1;
+                }
+
+                printf("present map load%zu plane%zu result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+                    map_index,
+                    plane_index,
+                    catalog[map_index].map.plane_results[plane_index].compressed_bytes,
+                    catalog[map_index].map.plane_results[plane_index].carmack_expanded_bytes,
+                    catalog[map_index].map.plane_results[plane_index].rlew_expanded_bytes,
+                    catalog[map_index].map.plane_results[plane_index].decoded_words);
+                printf("present map load%zu plane%zu sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+                    map_index,
+                    plane_index,
+                    top_left,
+                    mid_left,
+                    center,
+                    bottom_right);
+            }
         }
 
         free(catalog);
