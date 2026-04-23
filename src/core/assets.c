@@ -1238,7 +1238,8 @@ bool wolf_map_plane_header_is_valid_for_map(const wolf_map_summary *summary, con
         return false;
     }
 
-    return header->decoded_words == expected_words;
+    return header->rlew_expanded_bytes == (expected_words * sizeof(uint16_t))
+        && header->decoded_words == expected_words;
 }
 
 bool wolf_map_plane_header_matches_summary(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header)

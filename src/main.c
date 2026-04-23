@@ -699,6 +699,15 @@ static int run_map_validation_self_test(void)
     puts("map plane header wrong decoded size ok");
     valid_header.decoded_words = 4096;
 
+    valid_header.rlew_expanded_bytes = 8190;
+    if (wolf_map_plane_header_is_valid_for_map(&valid_summary, &valid_header))
+    {
+        fputs("map plane header wrong-expanded-size self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header wrong expanded size ok");
+    valid_header.rlew_expanded_bytes = 8192;
+
     valid_summary.gamemaps_file_size = 4096;
     valid_summary.plane_offsets[0] = 11;
     valid_summary.plane_offsets[1] = 1445;

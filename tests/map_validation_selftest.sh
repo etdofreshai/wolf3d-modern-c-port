@@ -30,6 +30,7 @@ for expected in \
   "map plane header odd size ok" \
   "map plane header missing Carmack size ok" \
   "map plane header wrong decoded size ok" \
+  "map plane header wrong expanded size ok" \
   "map plane bounds reject invalid summary ok" \
   "map plane bounds overflow ok"; do
   if [[ "$OUTPUT" != *"$expected"* ]]; then
