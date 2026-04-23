@@ -502,6 +502,8 @@ int main(int argc, char **argv)
     int inspect_map_presence_summary = 0;
     int inspect_map_catalog = 0;
     size_t inspect_map_catalog_count = 0;
+    int inspect_present_map_catalog = 0;
+    size_t inspect_present_map_catalog_count = 0;
     int validate_map_catalog = 0;
     size_t validate_map_catalog_count = 0;
     int validate_map_header = 0;
@@ -655,6 +657,28 @@ int main(int argc, char **argv)
 
             inspect_map_catalog = 1;
             inspect_map_catalog_count = (size_t)parsed_count;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-catalog") == 0)
+        {
+            char *end = NULL;
+            long parsed_count;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-present-map-catalog requires a count\n", stderr);
+                return 1;
+            }
+
+            parsed_count = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_count < 0)
+            {
+                fputs("--inspect-present-map-catalog count must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_catalog = 1;
+            inspect_present_map_catalog_count = (size_t)parsed_count;
             continue;
         }
 
@@ -1305,6 +1329,54 @@ int main(int argc, char **argv)
         {
             printf("map%zu catalog name: %s\n", map_index, catalog[map_index].name);
             printf("map%zu catalog size: %ux%u\n", map_index, catalog[map_index].width, catalog[map_index].height);
+        }
+
+        free(catalog);
+        return 0;
+    }
+
+    if (inspect_present_map_catalog)
+    {
+        wolf_present_map_summary *catalog = NULL;
+        size_t loaded_count = 0;
+        size_t map_index;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        catalog = (wolf_present_map_summary *)calloc(inspect_present_map_catalog_count == 0 ? 1 : inspect_present_map_catalog_count, sizeof(wolf_present_map_summary));
+        if (catalog == NULL)
+        {
+            fputs("out of memory allocating present map catalog\n", stderr);
+            return 1;
+        }
+
+        if (!wolf_read_present_map_catalog(data_path,
+                inspect_present_map_catalog_count,
+                catalog,
+                inspect_present_map_catalog_count,
+                &loaded_count,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            free(catalog);
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("present map catalog total slots: %zu\n", map_presence_summary.total_slots);
+        printf("present map catalog total present: %zu\n", map_presence_summary.present_slots);
+        for (map_index = 0; map_index < loaded_count; ++map_index)
+        {
+            printf("present map%zu slot: %zu\n", map_index, catalog[map_index].slot_index);
+            printf("present map%zu name: %s\n", map_index, catalog[map_index].summary.name);
+            printf("present map%zu size: %ux%u\n", map_index, catalog[map_index].summary.width, catalog[map_index].summary.height);
         }
 
         free(catalog);

@@ -81,5 +81,8 @@ fi
 if [[ -x "$ROOT/tests/map_plane_table_inspection.sh" ]]; then
   "$ROOT/tests/map_plane_table_inspection.sh"
 fi
+if [[ -x "$ROOT/tests/present_map_catalog.sh" ]]; then
+  "$ROOT/tests/present_map_catalog.sh"
+fi
 
 echo "all automated checks passed"

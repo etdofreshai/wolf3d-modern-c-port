@@ -33,6 +33,12 @@ typedef struct wolf_map_summary
     uint32_t gamemaps_file_size;
 } wolf_map_summary;
 
+typedef struct wolf_present_map_summary
+{
+    size_t slot_index;
+    wolf_map_summary summary;
+} wolf_present_map_summary;
+
 typedef struct wolf_map_plane_header
 {
     uint32_t offset;
@@ -62,6 +68,7 @@ bool wolf_read_map_presence_summary(const char *data_dir, wolf_map_presence_summ
 bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_slot(const char *data_dir, size_t map_index, uint32_t *offset, bool *is_present, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_catalog(const char *data_dir, size_t count, wolf_map_summary *summaries, size_t summaries_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size);
+bool wolf_read_present_map_catalog(const char *data_dir, size_t count, wolf_present_map_summary *entries, size_t entries_count, size_t *loaded_count, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_validate_map(const char *data_dir, size_t map_index, wolf_map_summary *summary, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size);
 bool wolf_validate_map_catalog(const char *data_dir, size_t count, bool *valid_flags, size_t valid_flags_count, size_t *validated_count, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_first_map_summary(const char *data_dir, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
