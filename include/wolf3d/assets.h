@@ -70,6 +70,7 @@ bool wolf_map_dimensions_are_supported(const wolf_map_summary *summary);
 bool wolf_map_plane_header_is_valid_for_map(const wolf_map_summary *summary, const wolf_map_plane_header *header);
 bool wolf_map_plane_header_matches_summary(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header);
 bool wolf_map_plane_header_is_in_bounds(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header);
+bool wolf_map_plane_load_result_matches_header(const wolf_map_plane_header *header, const wolf_map_plane_load_result *result);
 bool wolf_map_plane_headers_are_valid(const wolf_map_summary *summary, const wolf_map_plane_header headers[3]);
 bool wolf_map_plane_is_valid(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header);
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary);

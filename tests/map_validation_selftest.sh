@@ -23,6 +23,8 @@ for expected in \
   "map dimensions supported ok" \
   "map dimensions oversized ok" \
   "map plane header valid ok" \
+  "map plane load result match ok" \
+  "map plane load result mismatch ok" \
   "map plane table valid ok" \
   "map plane table invalid ok" \
   "map plane header odd size ok" \

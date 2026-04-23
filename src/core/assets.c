@@ -680,6 +680,19 @@ bool wolf_map_plane_header_is_in_bounds(const wolf_map_summary *summary, size_t 
     return true;
 }
 
+bool wolf_map_plane_load_result_matches_header(const wolf_map_plane_header *header, const wolf_map_plane_load_result *result)
+{
+    if (header == NULL || result == NULL)
+    {
+        return false;
+    }
+
+    return result->compressed_bytes == header->length
+        && result->carmack_expanded_bytes == header->carmack_expanded_bytes
+        && result->rlew_expanded_bytes == header->rlew_expanded_bytes
+        && result->decoded_words == header->decoded_words;
+}
+
 bool wolf_map_plane_is_valid(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header)
 {
     return wolf_map_plane_header_is_valid_for_map(summary, header)
@@ -1050,10 +1063,7 @@ bool wolf_load_map_plane_words(const char *data_dir, size_t map_index, size_t pl
         return false;
     }
 
-    if (result->compressed_bytes != plane_header.length
-        || result->carmack_expanded_bytes != plane_header.carmack_expanded_bytes
-        || result->rlew_expanded_bytes != plane_header.rlew_expanded_bytes
-        || result->decoded_words != plane_header.decoded_words)
+    if (!wolf_map_plane_load_result_matches_header(&plane_header, result))
     {
         set_error(error_buffer, error_buffer_size, "decoded map plane does not match plane header");
         return false;

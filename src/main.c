@@ -327,6 +327,7 @@ static int run_map_validation_self_test(void)
     wolf_map_summary valid_summary;
     wolf_map_plane_header valid_header;
     wolf_map_plane_header plane_headers[3];
+    wolf_map_plane_load_result load_result;
 
     memset(&valid_summary, 0, sizeof(valid_summary));
     valid_summary.plane_offsets[0] = 11;
@@ -400,6 +401,26 @@ static int run_map_validation_self_test(void)
         return 1;
     }
     puts("map plane header bounds ok");
+
+    load_result.compressed_bytes = valid_header.length;
+    load_result.carmack_expanded_bytes = valid_header.carmack_expanded_bytes;
+    load_result.rlew_expanded_bytes = valid_header.rlew_expanded_bytes;
+    load_result.decoded_words = valid_header.decoded_words;
+    if (!wolf_map_plane_load_result_matches_header(&valid_header, &load_result))
+    {
+        fputs("map plane load-result-match self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane load result match ok");
+
+    load_result.decoded_words -= 1;
+    if (wolf_map_plane_load_result_matches_header(&valid_header, &load_result))
+    {
+        fputs("map plane load-result-mismatch self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane load result mismatch ok");
+    load_result.decoded_words = valid_header.decoded_words;
 
     plane_headers[0] = valid_header;
     plane_headers[1].offset = valid_summary.plane_offsets[1];
