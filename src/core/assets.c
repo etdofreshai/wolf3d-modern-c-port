@@ -540,6 +540,64 @@ bool wolf_read_present_map_catalog(const char *data_dir, size_t count, wolf_pres
     return true;
 }
 
+bool wolf_load_present_map_catalog(const char *data_dir, size_t count, wolf_loaded_present_map *entries, size_t entries_count, size_t *loaded_count, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_map_presence_summary local_presence_summary;
+    size_t slot_index;
+    size_t entry_index;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || entries == NULL || loaded_count == NULL || count > entries_count)
+    {
+        set_error(error_buffer, error_buffer_size, "could not load present map catalog");
+        return false;
+    }
+
+    if (!wolf_read_map_presence_summary(data_dir, &local_presence_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    count = count < local_presence_summary.present_slots ? count : local_presence_summary.present_slots;
+    entry_index = 0;
+    for (slot_index = 0; slot_index < local_presence_summary.total_slots && entry_index < count; ++slot_index)
+    {
+        uint32_t map_offset = 0;
+        bool is_present = false;
+
+        if (!wolf_read_map_slot(data_dir, slot_index, &map_offset, &is_present, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+
+        (void)map_offset;
+        if (!is_present)
+        {
+            continue;
+        }
+
+        entries[entry_index].slot_index = slot_index;
+        if (!wolf_load_map(data_dir, slot_index, &entries[entry_index].map, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+
+        entry_index += 1;
+    }
+
+    *loaded_count = entry_index;
+    if (presence_summary != NULL)
+    {
+        *presence_summary = local_presence_summary;
+    }
+
+    return true;
+}
+
 bool wolf_validate_map(const char *data_dir, size_t map_index, wolf_map_summary *summary, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size)
 {
     wolf_map_summary local_summary;

@@ -521,6 +521,8 @@ int main(int argc, char **argv)
     size_t inspect_map_catalog_count = 0;
     int inspect_present_map_catalog = 0;
     size_t inspect_present_map_catalog_count = 0;
+    int inspect_present_map_load_catalog = 0;
+    size_t inspect_present_map_load_catalog_count = 0;
     int validate_map_catalog = 0;
     size_t validate_map_catalog_count = 0;
     int validate_present_map_catalog = 0;
@@ -700,6 +702,28 @@ int main(int argc, char **argv)
 
             inspect_present_map_catalog = 1;
             inspect_present_map_catalog_count = (size_t)parsed_count;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-load-catalog") == 0)
+        {
+            char *end = NULL;
+            long parsed_count;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-present-map-load-catalog requires a count\n", stderr);
+                return 1;
+            }
+
+            parsed_count = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_count < 0)
+            {
+                fputs("--inspect-present-map-load-catalog count must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_load_catalog = 1;
+            inspect_present_map_load_catalog_count = (size_t)parsed_count;
             continue;
         }
 
@@ -1442,6 +1466,82 @@ int main(int argc, char **argv)
             printf("present map%zu slot: %zu\n", map_index, catalog[map_index].slot_index);
             printf("present map%zu name: %s\n", map_index, catalog[map_index].summary.name);
             printf("present map%zu size: %ux%u\n", map_index, catalog[map_index].summary.width, catalog[map_index].summary.height);
+        }
+
+        free(catalog);
+        return 0;
+    }
+
+    if (inspect_present_map_load_catalog)
+    {
+        wolf_loaded_present_map *catalog = NULL;
+        size_t loaded_count = 0;
+        size_t map_index;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        catalog = (wolf_loaded_present_map *)calloc(inspect_present_map_load_catalog_count == 0 ? 1 : inspect_present_map_load_catalog_count,
+            sizeof(wolf_loaded_present_map));
+        if (catalog == NULL)
+        {
+            fputs("out of memory allocating present map load catalog\n", stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map_catalog(data_path,
+                inspect_present_map_load_catalog_count,
+                catalog,
+                inspect_present_map_load_catalog_count,
+                &loaded_count,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            free(catalog);
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("present map load catalog total slots: %zu\n", map_presence_summary.total_slots);
+        printf("present map load catalog total present: %zu\n", map_presence_summary.present_slots);
+        for (map_index = 0; map_index < loaded_count; ++map_index)
+        {
+            uint16_t top_left = 0;
+            uint16_t mid_left = 0;
+            uint16_t center = 0;
+            uint16_t bottom_right = 0;
+
+            if (!wolf_map_get_cell(&catalog[map_index].map, 0, 0, 0, &top_left)
+                || !wolf_map_get_cell(&catalog[map_index].map, 0, 31, 31, &mid_left)
+                || !wolf_map_get_cell(&catalog[map_index].map, 0, 32, 32, &center)
+                || !wolf_map_get_cell(&catalog[map_index].map, 0, 63, 63, &bottom_right))
+            {
+                free(catalog);
+                fputs("could not sample loaded present map\n", stderr);
+                return 1;
+            }
+
+            printf("present map load%zu slot: %zu\n", map_index, catalog[map_index].slot_index);
+            printf("present map load%zu name: %s\n", map_index, catalog[map_index].map.summary.name);
+            printf("present map load%zu size: %ux%u\n", map_index, catalog[map_index].map.summary.width, catalog[map_index].map.summary.height);
+            printf("present map load%zu plane0 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+                map_index,
+                catalog[map_index].map.plane_results[0].compressed_bytes,
+                catalog[map_index].map.plane_results[0].carmack_expanded_bytes,
+                catalog[map_index].map.plane_results[0].rlew_expanded_bytes,
+                catalog[map_index].map.plane_results[0].decoded_words);
+            printf("present map load%zu plane0 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+                map_index,
+                top_left,
+                mid_left,
+                center,
+                bottom_right);
         }
 
         free(catalog);
