@@ -552,6 +552,10 @@ int main(int argc, char **argv)
     size_t inspect_present_map_row_index = 0;
     size_t inspect_present_map_row_plane_index = 0;
     size_t inspect_present_map_row_y = 0;
+    int inspect_present_map_column = 0;
+    size_t inspect_present_map_column_index = 0;
+    size_t inspect_present_map_column_plane_index = 0;
+    size_t inspect_present_map_column_x = 0;
     int inspect_present_map_region = 0;
     size_t inspect_present_map_region_index = 0;
     size_t inspect_present_map_region_plane_index = 0;
@@ -846,6 +850,46 @@ int main(int argc, char **argv)
             inspect_present_map_row_index = (size_t)parsed_map_index;
             inspect_present_map_row_plane_index = (size_t)parsed_plane_index;
             inspect_present_map_row_y = (size_t)parsed_y;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-column") == 0)
+        {
+            char *map_end = NULL;
+            char *plane_end = NULL;
+            char *x_end = NULL;
+            long parsed_map_index;
+            long parsed_plane_index;
+            long parsed_x;
+            if ((i + 3) >= argc)
+            {
+                fputs("--inspect-present-map-column requires a present-map index, plane index, and x\n", stderr);
+                return 1;
+            }
+
+            parsed_map_index = strtol(argv[++i], &map_end, 10);
+            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
+            parsed_x = strtol(argv[++i], &x_end, 10);
+            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            {
+                fputs("--inspect-present-map-column index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (plane_end == argv[i - 1] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            {
+                fputs("--inspect-present-map-column plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+            if (x_end == argv[i] || *x_end != '\0' || parsed_x < 0)
+            {
+                fputs("--inspect-present-map-column x must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_column = 1;
+            inspect_present_map_column_index = (size_t)parsed_map_index;
+            inspect_present_map_column_plane_index = (size_t)parsed_plane_index;
+            inspect_present_map_column_x = (size_t)parsed_x;
             continue;
         }
 
@@ -1827,6 +1871,65 @@ int main(int argc, char **argv)
             row_words[33],
             row_words[34],
             row_words[63]);
+        return 0;
+    }
+
+    if (inspect_present_map_column)
+    {
+        wolf_loaded_present_map present_map;
+        uint16_t column_words[64];
+        size_t column_length = 0;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map(data_path,
+                inspect_present_map_column_index,
+                &present_map,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_column(&present_map.map,
+                inspect_present_map_column_plane_index,
+                inspect_present_map_column_x,
+                column_words,
+                (sizeof(column_words) / sizeof(column_words[0])),
+                &column_length))
+        {
+            fprintf(stderr,
+                "present map column is out of bounds: map=%zu plane=%zu x=%zu\n",
+                inspect_present_map_column_index,
+                inspect_present_map_column_plane_index,
+                inspect_present_map_column_x);
+            return 1;
+        }
+
+        printf("present map%zu plane%zu column%zu length: %zu\n",
+            inspect_present_map_column_index,
+            inspect_present_map_column_plane_index,
+            inspect_present_map_column_x,
+            column_length);
+        printf("present map%zu plane%zu column%zu cells: [0]=%u [1]=%u [31]=%u [32]=%u [33]=%u [34]=%u [63]=%u\n",
+            inspect_present_map_column_index,
+            inspect_present_map_column_plane_index,
+            inspect_present_map_column_x,
+            column_words[0],
+            column_words[1],
+            column_words[31],
+            column_words[32],
+            column_words[33],
+            column_words[34],
+            column_words[63]);
         return 0;
     }
 

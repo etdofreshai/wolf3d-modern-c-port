@@ -105,6 +105,9 @@ fi
 if [[ -x "$ROOT/tests/present_map_helper_inspection.sh" ]]; then
   "$ROOT/tests/present_map_helper_inspection.sh"
 fi
+if [[ -x "$ROOT/tests/present_map_column_inspection.sh" ]]; then
+  "$ROOT/tests/present_map_column_inspection.sh"
+fi
 if [[ -x "$ROOT/tests/present_map_load_catalog_validation.sh" ]]; then
   "$ROOT/tests/present_map_load_catalog_validation.sh"
 fi
