@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -723,6 +724,8 @@ int main(int argc, char **argv)
     size_t inspect_map_index = 0;
     int inspect_map_slot = 0;
     size_t inspect_map_slot_index = 0;
+    int inspect_present_index_for_slot = 0;
+    size_t inspect_present_index_for_slot_slot_index = 0;
     int inspect_map_presence_summary = 0;
     int inspect_map_catalog = 0;
     size_t inspect_map_catalog_count = 0;
@@ -890,6 +893,29 @@ int main(int argc, char **argv)
 
             inspect_map_slot = 1;
             inspect_map_slot_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-index-for-slot") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-present-index-for-slot requires a slot index\n", stderr);
+                return 1;
+            }
+
+            errno = 0;
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (errno == ERANGE || end == argv[i] || *end != '\0' || parsed_index < 0)
+            {
+                fputs("--inspect-present-index-for-slot slot index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_index_for_slot = 1;
+            inspect_present_index_for_slot_slot_index = (size_t)parsed_index;
             continue;
         }
 
@@ -1898,6 +1924,47 @@ int main(int argc, char **argv)
 
         printf("map%zu present: %s\n", inspect_map_slot_index, is_present ? "yes" : "no");
         printf("map%zu offset: %u\n", inspect_map_slot_index, map_offset);
+        return 0;
+    }
+
+    if (inspect_present_index_for_slot)
+    {
+        size_t present_index = 0;
+        bool is_present = false;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_present_index_for_slot(data_path,
+                inspect_present_index_for_slot_slot_index,
+                &present_index,
+                &is_present,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("map slot %zu present: %s\n", inspect_present_index_for_slot_slot_index, is_present ? "yes" : "no");
+        if (is_present)
+        {
+            if (!wolf_read_map_summary(data_path, inspect_present_index_for_slot_slot_index, &map_summary, error_buffer, sizeof(error_buffer)))
+            {
+                fputs(error_buffer, stderr);
+                fputc('\n', stderr);
+                return 1;
+            }
+
+            printf("map slot %zu present index: %zu\n", inspect_present_index_for_slot_slot_index, present_index);
+            printf("map slot %zu name: %s\n", inspect_present_index_for_slot_slot_index, map_summary.name);
+        }
         return 0;
     }
 

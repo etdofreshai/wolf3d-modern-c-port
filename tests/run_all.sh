@@ -72,6 +72,9 @@ fi
 if [[ -x "$ROOT/tests/map_presence_summary.sh" ]]; then
   "$ROOT/tests/map_presence_summary.sh"
 fi
+if [[ -x "$ROOT/tests/present_index_for_slot_inspection.sh" ]]; then
+  "$ROOT/tests/present_index_for_slot_inspection.sh"
+fi
 if [[ -x "$ROOT/tests/map_catalog_inspection.sh" ]]; then
   "$ROOT/tests/map_catalog_inspection.sh"
 fi

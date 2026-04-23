@@ -637,6 +637,67 @@ bool wolf_read_present_map_summary(const char *data_dir, size_t present_index, w
     return true;
 }
 
+bool wolf_read_present_index_for_slot(const char *data_dir, size_t slot_index, size_t *present_index, bool *is_present, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_map_presence_summary local_presence_summary;
+    size_t current_slot_index;
+    size_t current_present_index;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || present_index == NULL || is_present == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect present map slot");
+        return false;
+    }
+
+    if (!wolf_read_map_presence_summary(data_dir, &local_presence_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (slot_index >= local_presence_summary.total_slots)
+    {
+        set_error(error_buffer, error_buffer_size, "map index is out of range");
+        return false;
+    }
+
+    current_present_index = 0;
+    for (current_slot_index = 0; current_slot_index <= slot_index; ++current_slot_index)
+    {
+        uint32_t map_offset = 0;
+        bool current_is_present = false;
+
+        if (!wolf_read_map_slot(data_dir, current_slot_index, &map_offset, &current_is_present, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+
+        (void)map_offset;
+        if (current_slot_index == slot_index)
+        {
+            *is_present = current_is_present;
+            *present_index = current_is_present ? current_present_index : (size_t)-1;
+            if (presence_summary != NULL)
+            {
+                *presence_summary = local_presence_summary;
+            }
+            return true;
+        }
+
+        if (current_is_present)
+        {
+            current_present_index += 1;
+        }
+    }
+
+    set_error(error_buffer, error_buffer_size, "map index is out of range");
+    return false;
+}
+
 bool wolf_load_present_map(const char *data_dir, size_t present_index, wolf_loaded_present_map *entry, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
 {
     size_t slot_index;

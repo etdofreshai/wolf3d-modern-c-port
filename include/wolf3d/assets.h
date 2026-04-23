@@ -76,6 +76,7 @@ bool wolf_read_map_slot(const char *data_dir, size_t map_index, uint32_t *offset
 bool wolf_read_map_catalog(const char *data_dir, size_t count, wolf_map_summary *summaries, size_t summaries_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_present_map_catalog(const char *data_dir, size_t count, wolf_present_map_summary *entries, size_t entries_count, size_t *loaded_count, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_present_map_summary(const char *data_dir, size_t present_index, wolf_present_map_summary *entry, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);
+bool wolf_read_present_index_for_slot(const char *data_dir, size_t slot_index, size_t *present_index, bool *is_present, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_load_present_map(const char *data_dir, size_t present_index, wolf_loaded_present_map *entry, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_load_present_map_catalog(const char *data_dir, size_t count, wolf_loaded_present_map *entries, size_t entries_count, size_t *loaded_count, wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_validate_map(const char *data_dir, size_t map_index, wolf_map_summary *summary, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size);
