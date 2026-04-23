@@ -54,6 +54,9 @@ fi
 if [[ -x "$ROOT/tests/map_slot_validation.sh" ]]; then
   "$ROOT/tests/map_slot_validation.sh"
 fi
+if [[ -x "$ROOT/tests/map_presence_summary.sh" ]]; then
+  "$ROOT/tests/map_presence_summary.sh"
+fi
 if [[ -x "$ROOT/tests/map_catalog_inspection.sh" ]]; then
   "$ROOT/tests/map_catalog_inspection.sh"
 fi

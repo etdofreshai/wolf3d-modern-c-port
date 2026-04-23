@@ -396,6 +396,7 @@ int main(int argc, char **argv)
     size_t inspect_map_index = 0;
     int inspect_map_slot = 0;
     size_t inspect_map_slot_index = 0;
+    int inspect_map_presence_summary = 0;
     int inspect_map_catalog = 0;
     size_t inspect_map_catalog_count = 0;
     int validate_map_header = 0;
@@ -444,6 +445,7 @@ int main(int argc, char **argv)
     size_t inspect_map_region_height = 0;
     char error_buffer[256];
     wolf_maphead_summary maphead_summary;
+    wolf_map_presence_summary map_presence_summary;
     wolf_map_summary map_summary;
     wolf_map_plane_header plane_header;
     wolf_map_plane_header plane_headers[3];
@@ -519,6 +521,12 @@ int main(int argc, char **argv)
 
             inspect_map_slot = 1;
             inspect_map_slot_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-presence-summary") == 0)
+        {
+            inspect_map_presence_summary = 1;
             continue;
         }
 
@@ -1096,6 +1104,30 @@ int main(int argc, char **argv)
 
         printf("map%zu present: %s\n", inspect_map_slot_index, is_present ? "yes" : "no");
         printf("map%zu offset: %u\n", inspect_map_slot_index, map_offset);
+        return 0;
+    }
+
+    if (inspect_map_presence_summary)
+    {
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_read_map_presence_summary(data_path, &map_presence_summary, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("map slots total: %zu\n", map_presence_summary.total_slots);
+        printf("map slots present: %zu\n", map_presence_summary.present_slots);
+        printf("first present slot: %zu\n", map_presence_summary.has_present_slot ? map_presence_summary.first_present_slot : map_presence_summary.total_slots);
+        printf("last present slot: %zu\n", map_presence_summary.has_present_slot ? map_presence_summary.last_present_slot : map_presence_summary.total_slots);
+        printf("first empty slot: %zu\n", map_presence_summary.has_empty_slot ? map_presence_summary.first_empty_slot : map_presence_summary.total_slots);
         return 0;
     }
 

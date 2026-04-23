@@ -220,6 +220,83 @@ bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summa
     return true;
 }
 
+bool wolf_read_map_presence_summary(const char *data_dir, wolf_map_presence_summary *summary, char *error_buffer, size_t error_buffer_size)
+{
+    char maphead_path[4096];
+    FILE *file;
+    wolf_maphead_summary maphead;
+    size_t map_index;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || summary == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect map presence summary");
+        return false;
+    }
+
+    if (!wolf_read_maphead_summary(data_dir, &maphead, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    memset(summary, 0, sizeof(*summary));
+    summary->total_slots = maphead.map_count;
+
+    snprintf(maphead_path, sizeof(maphead_path), "%s/MAPHEAD.WL6", data_dir);
+    file = fopen(maphead_path, "rb");
+    if (file == NULL)
+    {
+        snprintf(error_buffer, error_buffer_size, "could not open %s", maphead_path);
+        return false;
+    }
+
+    if (fseek(file, 2, SEEK_SET) != 0)
+    {
+        fclose(file);
+        set_error(error_buffer, error_buffer_size, "could not seek to MAPHEAD.WL6 offsets");
+        return false;
+    }
+
+    for (map_index = 0; map_index < maphead.map_count; ++map_index)
+    {
+        unsigned char offset_bytes[4];
+        uint32_t map_offset;
+        bool is_present;
+
+        if (fread(offset_bytes, 1, sizeof(offset_bytes), file) != sizeof(offset_bytes))
+        {
+            fclose(file);
+            set_error(error_buffer, error_buffer_size, "could not read MAPHEAD.WL6 offset table");
+            return false;
+        }
+
+        map_offset = read_u32_le(offset_bytes);
+        is_present = map_offset != 0 && map_offset != 0xffffffffu;
+        if (is_present)
+        {
+            if (!summary->has_present_slot)
+            {
+                summary->has_present_slot = true;
+                summary->first_present_slot = map_index;
+            }
+            summary->last_present_slot = map_index;
+            summary->present_slots += 1;
+        }
+        else if (!summary->has_empty_slot)
+        {
+            summary->has_empty_slot = true;
+            summary->first_empty_slot = map_index;
+        }
+    }
+
+    fclose(file);
+    return true;
+}
+
 bool wolf_read_map_slot(const char *data_dir, size_t map_index, uint32_t *offset, bool *is_present, char *error_buffer, size_t error_buffer_size)
 {
     char maphead_path[4096];

@@ -12,6 +12,17 @@ typedef struct wolf_maphead_summary
     uint32_t first_map_offset;
 } wolf_maphead_summary;
 
+typedef struct wolf_map_presence_summary
+{
+    size_t total_slots;
+    size_t present_slots;
+    bool has_present_slot;
+    size_t first_present_slot;
+    size_t last_present_slot;
+    bool has_empty_slot;
+    size_t first_empty_slot;
+} wolf_map_presence_summary;
+
 typedef struct wolf_map_summary
 {
     uint32_t plane_offsets[3];
@@ -47,6 +58,7 @@ typedef struct wolf_loaded_map
 } wolf_loaded_map;
 
 bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summary, char *error_buffer, size_t error_buffer_size);
+bool wolf_read_map_presence_summary(const char *data_dir, wolf_map_presence_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_summary(const char *data_dir, size_t map_index, wolf_map_summary *summary, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_slot(const char *data_dir, size_t map_index, uint32_t *offset, bool *is_present, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_catalog(const char *data_dir, size_t count, wolf_map_summary *summaries, size_t summaries_count, size_t *loaded_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size);
