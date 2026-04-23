@@ -108,6 +108,9 @@ fi
 if [[ -x "$ROOT/tests/map_plane_table_catalog.sh" ]]; then
   "$ROOT/tests/map_plane_table_catalog.sh"
 fi
+if [[ -x "$ROOT/tests/map_plane_table_catalog_validation.sh" ]]; then
+  "$ROOT/tests/map_plane_table_catalog_validation.sh"
+fi
 if [[ -x "$ROOT/tests/present_map_catalog.sh" ]]; then
   "$ROOT/tests/present_map_catalog.sh"
 fi
