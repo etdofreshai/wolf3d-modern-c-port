@@ -142,6 +142,88 @@ static int run_decompression_failure_self_test(void)
     return 0;
 }
 
+static int run_map_plane_decode_self_test(void)
+{
+    static const uint8_t compressed_plane[] = {
+        0x0c, 0x00,
+        0x08, 0x00,
+        0x01, 0x00,
+        0x02, 0x00,
+        0xcd, 0xab,
+        0x02, 0x00,
+        0x03, 0x00};
+    static const uint8_t odd_carmack_size_plane[] = {
+        0x05, 0x00,
+        0x08, 0x00,
+        0x01, 0x00,
+        0x02, 0x00};
+    uint16_t decoded[8];
+    wolf_map_plane_load_result result;
+    char error_buffer[256];
+
+    if (!wolf_decode_map_plane(compressed_plane,
+            sizeof(compressed_plane),
+            0xabcd,
+            decoded,
+            (sizeof(decoded) / sizeof(decoded[0])),
+            &result,
+            error_buffer,
+            sizeof(error_buffer))
+        || result.compressed_bytes != sizeof(compressed_plane)
+        || result.carmack_expanded_bytes != 12
+        || result.rlew_expanded_bytes != 8
+        || result.decoded_words != 4
+        || decoded[0] != 1
+        || decoded[1] != 2
+        || decoded[2] != 3
+        || decoded[3] != 3)
+    {
+        fputs("map plane decode self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map plane decode ok: compressed=%u carmack=%u rlew=%u words=%zu values=%u,%u,%u,%u\n",
+        result.compressed_bytes,
+        result.carmack_expanded_bytes,
+        result.rlew_expanded_bytes,
+        result.decoded_words,
+        decoded[0],
+        decoded[1],
+        decoded[2],
+        decoded[3]);
+
+    if (wolf_decode_map_plane(compressed_plane,
+            sizeof(compressed_plane),
+            0xabcd,
+            decoded,
+            3,
+            &result,
+            error_buffer,
+            sizeof(error_buffer))
+        || strcmp(error_buffer, "destination buffer is too small for map plane") != 0)
+    {
+        fputs("map plane short-dest self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane decode short dest ok");
+
+    if (wolf_decode_map_plane(odd_carmack_size_plane,
+            sizeof(odd_carmack_size_plane),
+            0xabcd,
+            decoded,
+            (sizeof(decoded) / sizeof(decoded[0])),
+            &result,
+            error_buffer,
+            sizeof(error_buffer))
+        || strcmp(error_buffer, "carmack-expanded size must be even") != 0)
+    {
+        fputs("map plane odd-carmack-size self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane decode odd carmack size ok");
+
+    return 0;
+}
+
 static int run_map_helper_self_test(void)
 {
     wolf_loaded_map map;
@@ -412,6 +494,7 @@ int main(int argc, char **argv)
     int self_test_rlew = 0;
     int self_test_carmack = 0;
     int self_test_decompression_failures = 0;
+    int self_test_map_plane_decode = 0;
     int self_test_map_helpers = 0;
     int self_test_map_validation = 0;
     int inspect_first_map_plane = 0;
@@ -672,6 +755,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-decompression-failures") == 0)
         {
             self_test_decompression_failures = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-plane-decode") == 0)
+        {
+            self_test_map_plane_decode = 1;
             continue;
         }
 
@@ -1402,6 +1491,11 @@ int main(int argc, char **argv)
     if (self_test_decompression_failures)
     {
         return run_decompression_failure_self_test();
+    }
+
+    if (self_test_map_plane_decode)
+    {
+        return run_map_plane_decode_self_test();
     }
 
     if (self_test_map_helpers)

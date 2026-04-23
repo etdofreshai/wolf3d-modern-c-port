@@ -78,6 +78,7 @@ bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t p
 bool wolf_read_map_plane_headers(const char *data_dir, size_t map_index, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size);
 bool wolf_rlew_expand_words(const uint16_t *source, size_t source_words, uint16_t *dest, size_t dest_words, uint16_t rlew_tag);
 bool wolf_carmack_expand_bytes(const uint8_t *source, size_t source_size, uint16_t *dest, size_t dest_words);
+bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_size, uint16_t rlew_tag, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size);
 bool wolf_load_map_plane_words(const char *data_dir, size_t map_index, size_t plane_index, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size);
 bool wolf_load_first_map_plane_words(const char *data_dir, size_t plane_index, uint16_t *dest, size_t dest_words, wolf_map_plane_load_result *result, char *error_buffer, size_t error_buffer_size);
 bool wolf_load_map(const char *data_dir, size_t map_index, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size);
