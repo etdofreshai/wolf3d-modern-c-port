@@ -935,6 +935,68 @@ bool wolf_validate_map_load(const char *data_dir, size_t map_index, wolf_loaded_
     return true;
 }
 
+bool wolf_validate_map_load_catalog(const char *data_dir, size_t count, bool *valid_flags, size_t valid_flags_count, size_t *validated_count, wolf_maphead_summary *maphead_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_maphead_summary local_maphead_summary;
+    size_t index;
+    size_t limit;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL || valid_flags == NULL || validated_count == NULL || count > valid_flags_count)
+    {
+        set_error(error_buffer, error_buffer_size, "could not validate map load catalog");
+        return false;
+    }
+
+    if (!wolf_read_maphead_summary(data_dir, &local_maphead_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    limit = count;
+    if (limit > local_maphead_summary.map_count)
+    {
+        limit = local_maphead_summary.map_count;
+    }
+
+    for (index = 0; index < limit; ++index)
+    {
+        uint32_t map_offset = 0;
+        bool is_present = false;
+
+        valid_flags[index] = false;
+        if (!wolf_read_map_slot(data_dir, index, &map_offset, &is_present, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+
+        (void)map_offset;
+        if (!is_present)
+        {
+            continue;
+        }
+
+        if (!wolf_validate_map_load(data_dir, index, NULL, NULL, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+
+        valid_flags[index] = true;
+    }
+
+    *validated_count = limit;
+    if (maphead_summary != NULL)
+    {
+        *maphead_summary = local_maphead_summary;
+    }
+
+    return true;
+}
+
 bool wolf_validate_present_map_load(const char *data_dir, size_t present_index, wolf_loaded_present_map *entry, wolf_map_plane_header headers[3], wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
 {
     wolf_loaded_present_map local_entry;
