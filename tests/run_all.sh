@@ -99,6 +99,9 @@ fi
 if [[ -x "$ROOT/tests/present_map_load_catalog.sh" ]]; then
   "$ROOT/tests/present_map_load_catalog.sh"
 fi
+if [[ -x "$ROOT/tests/present_map_load_inspection.sh" ]]; then
+  "$ROOT/tests/present_map_load_inspection.sh"
+fi
 if [[ -x "$ROOT/tests/present_map_load_catalog_validation.sh" ]]; then
   "$ROOT/tests/present_map_load_catalog_validation.sh"
 fi

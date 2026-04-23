@@ -542,6 +542,8 @@ int main(int argc, char **argv)
     size_t inspect_map_catalog_count = 0;
     int inspect_present_map_catalog = 0;
     size_t inspect_present_map_catalog_count = 0;
+    int inspect_present_map_load = 0;
+    size_t inspect_present_map_load_index = 0;
     int inspect_present_map_load_catalog = 0;
     size_t inspect_present_map_load_catalog_count = 0;
     int validate_map_catalog = 0;
@@ -727,6 +729,28 @@ int main(int argc, char **argv)
 
             inspect_present_map_catalog = 1;
             inspect_present_map_catalog_count = (size_t)parsed_count;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-load") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-present-map-load requires an index\n", stderr);
+                return 1;
+            }
+
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_index < 0)
+            {
+                fputs("--inspect-present-map-load index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_load = 1;
+            inspect_present_map_load_index = (size_t)parsed_index;
             continue;
         }
 
@@ -1538,6 +1562,69 @@ int main(int argc, char **argv)
         }
 
         free(catalog);
+        return 0;
+    }
+
+    if (inspect_present_map_load)
+    {
+        wolf_loaded_present_map present_map;
+        const wolf_map_plane_load_result *plane_result = NULL;
+        size_t plane_index;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map(data_path,
+                inspect_present_map_load_index,
+                &present_map,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("present map load index: %zu\n", inspect_present_map_load_index);
+        printf("present map load slot: %zu\n", present_map.slot_index);
+        printf("present map load name: %s\n", present_map.map.summary.name);
+        printf("present map load size: %ux%u\n", present_map.map.summary.width, present_map.map.summary.height);
+        for (plane_index = 0; plane_index < 3; ++plane_index)
+        {
+            uint16_t top_left = 0;
+            uint16_t mid_left = 0;
+            uint16_t center = 0;
+            uint16_t bottom_right = 0;
+
+            if (!wolf_map_get_plane_result(&present_map.map, plane_index, &plane_result)
+                || !wolf_map_get_cell(&present_map.map, plane_index, 0, 0, &top_left)
+                || !wolf_map_get_cell(&present_map.map, plane_index, 31, 31, &mid_left)
+                || !wolf_map_get_cell(&present_map.map, plane_index, 32, 32, &center)
+                || !wolf_map_get_cell(&present_map.map, plane_index, 63, 63, &bottom_right))
+            {
+                fputs("could not inspect loaded present map\n", stderr);
+                return 1;
+            }
+
+            printf("present map plane%zu result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+                plane_index,
+                plane_result->compressed_bytes,
+                plane_result->carmack_expanded_bytes,
+                plane_result->rlew_expanded_bytes,
+                plane_result->decoded_words);
+            printf("present map plane%zu sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+                plane_index,
+                top_left,
+                mid_left,
+                center,
+                bottom_right);
+        }
+
         return 0;
     }
 
