@@ -109,6 +109,7 @@ bool wolf_map_plane_headers_are_valid(const wolf_map_summary *summary, const wol
 bool wolf_map_plane_is_valid(const wolf_map_summary *summary, size_t plane_index, const wolf_map_plane_header *header);
 bool wolf_map_planes_are_in_bounds(const wolf_map_summary *summary);
 bool wolf_first_map_planes_are_in_bounds(const wolf_map_summary *summary);
+bool wolf_map_plane_header_from_bytes(const wolf_map_summary *summary, size_t plane_index, uint32_t plane_offset, const uint8_t *compressed_bytes, size_t compressed_size, wolf_map_plane_header *header, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t plane_index, wolf_map_plane_header *header, char *error_buffer, size_t error_buffer_size);
 bool wolf_read_map_plane_headers(const char *data_dir, size_t map_index, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size);
 bool wolf_read_present_map_plane_headers(const char *data_dir, size_t present_index, wolf_present_map_summary *entry, wolf_map_plane_header headers[3], wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size);

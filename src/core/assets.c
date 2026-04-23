@@ -1348,15 +1348,97 @@ bool wolf_first_map_planes_are_in_bounds(const wolf_map_summary *summary)
     return wolf_map_planes_are_in_bounds(summary);
 }
 
+bool wolf_map_plane_header_from_bytes(const wolf_map_summary *summary, size_t plane_index, uint32_t plane_offset, const uint8_t *compressed_bytes, size_t compressed_size, wolf_map_plane_header *header, char *error_buffer, size_t error_buffer_size)
+{
+    uint16_t *carmack_words;
+    size_t carmack_word_count;
+    bool ok;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (summary == NULL || compressed_bytes == NULL || header == NULL || plane_index >= 3)
+    {
+        set_error(error_buffer, error_buffer_size, "could not inspect map plane header");
+        return false;
+    }
+
+    if (!wolf_map_header_is_valid(summary) || !wolf_map_planes_are_in_bounds(summary))
+    {
+        set_error(error_buffer, error_buffer_size, "map header is invalid");
+        return false;
+    }
+
+    if (compressed_size != summary->plane_lengths[plane_index])
+    {
+        set_error(error_buffer, error_buffer_size, "map plane size does not match header summary");
+        return false;
+    }
+
+    if (compressed_size < 4)
+    {
+        set_error(error_buffer, error_buffer_size, "map plane is too small");
+        return false;
+    }
+
+    header->offset = plane_offset;
+    header->length = (uint16_t)compressed_size;
+    header->carmack_expanded_bytes = read_u16_le(compressed_bytes);
+    if ((header->carmack_expanded_bytes % 2) != 0)
+    {
+        set_error(error_buffer, error_buffer_size, "carmack-expanded size must be even");
+        return false;
+    }
+
+    carmack_word_count = (size_t)(header->carmack_expanded_bytes / 2);
+    if (carmack_word_count == 0)
+    {
+        set_error(error_buffer, error_buffer_size, "carmack-expanded plane is empty");
+        return false;
+    }
+
+    carmack_words = (uint16_t *)malloc(carmack_word_count * sizeof(uint16_t));
+    if (carmack_words == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "out of memory expanding map plane");
+        return false;
+    }
+
+    ok = wolf_carmack_expand_bytes(compressed_bytes + 2, compressed_size - 2, carmack_words, carmack_word_count);
+    if (!ok)
+    {
+        free(carmack_words);
+        set_error(error_buffer, error_buffer_size, "could not Carmack-expand map plane");
+        return false;
+    }
+
+    header->rlew_expanded_bytes = carmack_words[0];
+    free(carmack_words);
+    if ((header->rlew_expanded_bytes % 2) != 0)
+    {
+        set_error(error_buffer, error_buffer_size, "RLEW-expanded size must be even");
+        return false;
+    }
+
+    header->decoded_words = (size_t)(header->rlew_expanded_bytes / 2);
+    if (!wolf_map_plane_is_valid(summary, plane_index, header))
+    {
+        set_error(error_buffer, error_buffer_size, "map plane header does not match map dimensions");
+        return false;
+    }
+
+    return true;
+}
+
 bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t plane_index, wolf_map_plane_header *header, char *error_buffer, size_t error_buffer_size)
 {
     char path[4096];
     FILE *file;
     wolf_map_summary summary;
     unsigned char *compressed_bytes;
-    uint16_t *carmack_words;
     size_t compressed_size;
-    size_t carmack_word_count;
     bool ok;
 
     if (error_buffer != NULL && error_buffer_size > 0)
@@ -1420,57 +1502,16 @@ bool wolf_read_map_plane_header(const char *data_dir, size_t map_index, size_t p
     }
     fclose(file);
 
-    header->offset = summary.plane_offsets[plane_index];
-    header->length = summary.plane_lengths[plane_index];
-    header->carmack_expanded_bytes = read_u16_le(compressed_bytes);
-    if ((header->carmack_expanded_bytes % 2) != 0)
-    {
-        free(compressed_bytes);
-        set_error(error_buffer, error_buffer_size, "carmack-expanded size must be even");
-        return false;
-    }
-
-    carmack_word_count = (size_t)(header->carmack_expanded_bytes / 2);
-    if (carmack_word_count == 0)
-    {
-        free(compressed_bytes);
-        set_error(error_buffer, error_buffer_size, "carmack-expanded plane is empty");
-        return false;
-    }
-
-    carmack_words = (uint16_t *)malloc(carmack_word_count * sizeof(uint16_t));
-    if (carmack_words == NULL)
-    {
-        free(compressed_bytes);
-        set_error(error_buffer, error_buffer_size, "out of memory expanding map plane");
-        return false;
-    }
-
-    ok = wolf_carmack_expand_bytes(compressed_bytes + 2, compressed_size - 2, carmack_words, carmack_word_count);
+    ok = wolf_map_plane_header_from_bytes(&summary,
+        plane_index,
+        summary.plane_offsets[plane_index],
+        compressed_bytes,
+        compressed_size,
+        header,
+        error_buffer,
+        error_buffer_size);
     free(compressed_bytes);
-    if (!ok)
-    {
-        free(carmack_words);
-        set_error(error_buffer, error_buffer_size, "could not Carmack-expand map plane");
-        return false;
-    }
-
-    header->rlew_expanded_bytes = carmack_words[0];
-    free(carmack_words);
-    if ((header->rlew_expanded_bytes % 2) != 0)
-    {
-        set_error(error_buffer, error_buffer_size, "RLEW-expanded size must be even");
-        return false;
-    }
-
-    header->decoded_words = (size_t)(header->rlew_expanded_bytes / 2);
-    if (!wolf_map_plane_header_is_valid_for_map(&summary, header))
-    {
-        set_error(error_buffer, error_buffer_size, "map plane header does not match map dimensions");
-        return false;
-    }
-
-    return true;
+    return ok;
 }
 
 bool wolf_read_map_plane_headers(const char *data_dir, size_t map_index, wolf_map_plane_header headers[3], char *error_buffer, size_t error_buffer_size)

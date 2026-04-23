@@ -225,6 +225,135 @@ static int run_map_plane_decode_self_test(void)
     return 0;
 }
 
+static int run_map_plane_header_bytes_self_test(void)
+{
+    static const uint8_t valid_plane[] = {
+        0x0c, 0x00,
+        0x08, 0x00,
+        0x01, 0x00,
+        0x02, 0x00,
+        0xcd, 0xab,
+        0x02, 0x00,
+        0x03, 0x00};
+    static const uint8_t odd_carmack_plane[] = {
+        0x05, 0x00,
+        0x08, 0x00,
+        0x01, 0x00,
+        0x02, 0x00};
+    static const uint8_t empty_carmack_plane[] = {
+        0x00, 0x00,
+        0x01, 0x00};
+    static const uint8_t odd_rlew_plane[] = {
+        0x06, 0x00,
+        0x09, 0x00,
+        0x01, 0x00,
+        0x02, 0x00};
+    wolf_map_summary summary;
+    wolf_map_plane_header header;
+    char error_buffer[256];
+
+    memset(&summary, 0, sizeof(summary));
+    summary.plane_offsets[0] = 11;
+    summary.plane_offsets[1] = 25;
+    summary.plane_offsets[2] = 29;
+    summary.plane_lengths[0] = (uint16_t)sizeof(valid_plane);
+    summary.plane_lengths[1] = 4;
+    summary.plane_lengths[2] = 4;
+    summary.width = 2;
+    summary.height = 2;
+    memcpy(summary.name, "Hdr", sizeof("Hdr"));
+    summary.gamemaps_file_size = 64;
+
+    if (!wolf_map_plane_header_from_bytes(&summary,
+            0,
+            summary.plane_offsets[0],
+            valid_plane,
+            sizeof(valid_plane),
+            &header,
+            error_buffer,
+            sizeof(error_buffer))
+        || header.offset != summary.plane_offsets[0]
+        || header.length != sizeof(valid_plane)
+        || header.carmack_expanded_bytes != 12
+        || header.rlew_expanded_bytes != 8
+        || header.decoded_words != 4)
+    {
+        fputs("map plane header bytes self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map plane header bytes ok: length=%u carmack=%u rlew=%u words=%zu\n",
+        header.length,
+        header.carmack_expanded_bytes,
+        header.rlew_expanded_bytes,
+        header.decoded_words);
+
+    summary.plane_lengths[0] = (uint16_t)sizeof(odd_carmack_plane);
+    if (wolf_map_plane_header_from_bytes(&summary,
+            0,
+            summary.plane_offsets[0],
+            odd_carmack_plane,
+            sizeof(odd_carmack_plane),
+            &header,
+            error_buffer,
+            sizeof(error_buffer))
+        || strcmp(error_buffer, "carmack-expanded size must be even") != 0)
+    {
+        fputs("map plane header odd-carmack self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header odd carmack ok");
+
+    summary.plane_lengths[0] = (uint16_t)sizeof(empty_carmack_plane);
+    if (wolf_map_plane_header_from_bytes(&summary,
+            0,
+            summary.plane_offsets[0],
+            empty_carmack_plane,
+            sizeof(empty_carmack_plane),
+            &header,
+            error_buffer,
+            sizeof(error_buffer))
+        || strcmp(error_buffer, "carmack-expanded plane is empty") != 0)
+    {
+        fputs("map plane header empty-carmack self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header empty carmack ok");
+
+    summary.plane_lengths[0] = (uint16_t)sizeof(odd_rlew_plane);
+    if (wolf_map_plane_header_from_bytes(&summary,
+            0,
+            summary.plane_offsets[0],
+            odd_rlew_plane,
+            sizeof(odd_rlew_plane),
+            &header,
+            error_buffer,
+            sizeof(error_buffer))
+        || strcmp(error_buffer, "RLEW-expanded size must be even") != 0)
+    {
+        fputs("map plane header odd-rlew self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header odd rlew ok");
+
+    summary.plane_lengths[0] = (uint16_t)sizeof(valid_plane);
+    if (wolf_map_plane_header_from_bytes(&summary,
+            0,
+            summary.plane_offsets[0],
+            valid_plane,
+            sizeof(valid_plane) - 2,
+            &header,
+            error_buffer,
+            sizeof(error_buffer))
+        || strcmp(error_buffer, "map plane size does not match header summary") != 0)
+    {
+        fputs("map plane header size-mismatch self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane header size mismatch ok");
+
+    return 0;
+}
+
 static int run_map_helper_self_test(void)
 {
     wolf_loaded_map map;
@@ -809,6 +938,7 @@ int main(int argc, char **argv)
     int self_test_carmack = 0;
     int self_test_decompression_failures = 0;
     int self_test_map_plane_decode = 0;
+    int self_test_map_plane_header_bytes = 0;
     int self_test_map_helpers = 0;
     int self_test_present_map_helpers = 0;
     int self_test_map_validation = 0;
@@ -1473,6 +1603,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-map-plane-decode") == 0)
         {
             self_test_map_plane_decode = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-plane-header-bytes") == 0)
+        {
+            self_test_map_plane_header_bytes = 1;
             continue;
         }
 
@@ -3059,6 +3195,11 @@ int main(int argc, char **argv)
     if (self_test_map_plane_decode)
     {
         return run_map_plane_decode_self_test();
+    }
+
+    if (self_test_map_plane_header_bytes)
+    {
+        return run_map_plane_header_bytes_self_test();
     }
 
     if (self_test_map_helpers)

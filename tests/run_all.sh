@@ -24,6 +24,9 @@ fi
 if [[ -x "$ROOT/tests/map_plane_decode_selftest.sh" ]]; then
   "$ROOT/tests/map_plane_decode_selftest.sh"
 fi
+if [[ -x "$ROOT/tests/map_plane_header_bytes_selftest.sh" ]]; then
+  "$ROOT/tests/map_plane_header_bytes_selftest.sh"
+fi
 if [[ -x "$ROOT/tests/map_helper_selftest.sh" ]]; then
   "$ROOT/tests/map_helper_selftest.sh"
 fi
