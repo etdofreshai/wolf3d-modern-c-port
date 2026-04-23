@@ -755,6 +755,8 @@ int main(int argc, char **argv)
     size_t validate_map_catalog_count = 0;
     int validate_present_map_catalog = 0;
     size_t validate_present_map_catalog_count = 0;
+    int validate_present_map_load = 0;
+    size_t validate_present_map_load_index = 0;
     int validate_present_map_load_catalog = 0;
     size_t validate_present_map_load_catalog_count = 0;
     int validate_map_header = 0;
@@ -1235,6 +1237,28 @@ int main(int argc, char **argv)
 
             validate_present_map_load_catalog = 1;
             validate_present_map_load_catalog_count = (size_t)parsed_count;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--validate-present-map-load") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--validate-present-map-load requires an index\n", stderr);
+                return 1;
+            }
+
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_index < 0)
+            {
+                fputs("--validate-present-map-load index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            validate_present_map_load = 1;
+            validate_present_map_load_index = (size_t)parsed_index;
             continue;
         }
 
@@ -2545,6 +2569,51 @@ int main(int argc, char **argv)
 
         free(slot_indices);
         free(valid_flags);
+        return all_valid ? 0 : 1;
+    }
+
+    if (validate_present_map_load)
+    {
+        wolf_loaded_present_map present_map;
+        size_t plane_index;
+        int all_valid = 1;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_validate_present_map_load(data_path,
+                validate_present_map_load_index,
+                &present_map,
+                plane_headers,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        printf("present map load validation index: %zu\n", validate_present_map_load_index);
+        printf("present map load validation slot: %zu\n", present_map.slot_index);
+        printf("present map load validation name: %s\n", present_map.map.summary.name);
+        printf("present map load validation size: %ux%u\n", present_map.map.summary.width, present_map.map.summary.height);
+        printf("present map load validation plane table valid: %s\n",
+            wolf_map_plane_headers_are_valid(&present_map.map.summary, plane_headers) ? "yes" : "no");
+        for (plane_index = 0; plane_index < 3; ++plane_index)
+        {
+            int plane_valid = wolf_map_plane_load_result_matches_header(&plane_headers[plane_index], &present_map.map.plane_results[plane_index]);
+            printf("present map plane%zu load result match: %s\n", plane_index, plane_valid ? "yes" : "no");
+            if (!plane_valid)
+            {
+                all_valid = 0;
+            }
+        }
+
         return all_valid ? 0 : 1;
     }
 

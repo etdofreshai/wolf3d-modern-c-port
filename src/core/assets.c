@@ -835,6 +835,66 @@ bool wolf_validate_map_load(const char *data_dir, size_t map_index, wolf_loaded_
     return true;
 }
 
+bool wolf_validate_present_map_load(const char *data_dir, size_t present_index, wolf_loaded_present_map *entry, wolf_map_plane_header headers[3], wolf_map_presence_summary *presence_summary, char *error_buffer, size_t error_buffer_size)
+{
+    wolf_loaded_present_map local_entry;
+    wolf_map_plane_header local_headers[3];
+    wolf_map_presence_summary local_presence_summary;
+    size_t plane_index;
+
+    if (error_buffer != NULL && error_buffer_size > 0)
+    {
+        error_buffer[0] = '\0';
+    }
+
+    if (data_dir == NULL)
+    {
+        set_error(error_buffer, error_buffer_size, "could not validate present map load");
+        return false;
+    }
+
+    if (!wolf_load_present_map(data_dir, present_index, &local_entry, &local_presence_summary, error_buffer, error_buffer_size))
+    {
+        return false;
+    }
+
+    if (!wolf_read_map_plane_headers(data_dir, local_entry.slot_index, local_headers, error_buffer, error_buffer_size)
+        || !wolf_map_plane_headers_are_valid(&local_entry.map.summary, local_headers))
+    {
+        if (error_buffer != NULL && error_buffer_size > 0 && error_buffer[0] == '\0')
+        {
+            set_error(error_buffer, error_buffer_size, "loaded present map plane table is invalid");
+        }
+        return false;
+    }
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        if (!wolf_map_plane_load_result_matches_header(&local_headers[plane_index], &local_entry.map.plane_results[plane_index]))
+        {
+            set_error(error_buffer, error_buffer_size, "loaded present map does not match plane headers");
+            return false;
+        }
+    }
+
+    if (entry != NULL)
+    {
+        *entry = local_entry;
+    }
+
+    if (headers != NULL)
+    {
+        memcpy(headers, local_headers, sizeof(local_headers));
+    }
+
+    if (presence_summary != NULL)
+    {
+        *presence_summary = local_presence_summary;
+    }
+
+    return true;
+}
+
 bool wolf_validate_map_catalog(const char *data_dir, size_t count, bool *valid_flags, size_t valid_flags_count, size_t *validated_count, char *error_buffer, size_t error_buffer_size)
 {
     wolf_maphead_summary maphead_summary;
