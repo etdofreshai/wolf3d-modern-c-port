@@ -45,6 +45,9 @@ fi
 if [[ -x "$ROOT/tests/map_overview_loading.sh" ]]; then
   "$ROOT/tests/map_overview_loading.sh"
 fi
+if [[ -x "$ROOT/tests/map_load_inspection.sh" ]]; then
+  "$ROOT/tests/map_load_inspection.sh"
+fi
 if [[ -x "$ROOT/tests/map_plane_header_inspection.sh" ]]; then
   "$ROOT/tests/map_plane_header_inspection.sh"
 fi

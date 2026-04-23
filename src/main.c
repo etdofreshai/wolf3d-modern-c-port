@@ -227,6 +227,7 @@ static int run_map_plane_decode_self_test(void)
 static int run_map_helper_self_test(void)
 {
     wolf_loaded_map map;
+    const wolf_map_plane_load_result *plane_result = NULL;
     const uint16_t *plane_words = NULL;
     size_t word_count = 0;
     size_t index = 0;
@@ -253,6 +254,15 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     printf("map helper index ok: %zu\n", index);
+
+    if (!wolf_map_get_plane_result(&map, 1, &plane_result)
+        || plane_result->compressed_bytes != 0
+        || plane_result->decoded_words != 0)
+    {
+        fputs("map helper plane-result self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper plane result ok: compressed=%u words=%zu\n", plane_result->compressed_bytes, plane_result->decoded_words);
 
     if (!wolf_map_get_plane_words(&map, 1, &plane_words, &word_count)
         || word_count != 12
@@ -311,6 +321,13 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     puts("map helper invalid plane ok");
+
+    if (wolf_map_get_plane_result(&map, 3, &plane_result))
+    {
+        fputs("map helper invalid-plane-result self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper invalid plane result ok");
 
     if (wolf_map_get_region(&map, 1, 3, 2, 2, 2, region_words, (sizeof(region_words) / sizeof(region_words[0])), &region_word_count))
     {
@@ -534,6 +551,8 @@ int main(int argc, char **argv)
     size_t inspect_map_plane_table_index = 0;
     int inspect_map_overview = 0;
     size_t inspect_map_overview_index = 0;
+    int inspect_map_load = 0;
+    size_t inspect_map_load_index = 0;
     int inspect_map_cell = 0;
     size_t inspect_map_cell_map_index = 0;
     size_t inspect_map_cell_x = 0;
@@ -948,6 +967,28 @@ int main(int argc, char **argv)
 
             inspect_map_overview = 1;
             inspect_map_overview_index = (size_t)parsed_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-map-load") == 0)
+        {
+            char *end = NULL;
+            long parsed_index;
+            if ((i + 1) >= argc)
+            {
+                fputs("--inspect-map-load requires an index\n", stderr);
+                return 1;
+            }
+
+            parsed_index = strtol(argv[++i], &end, 10);
+            if (end == argv[i] || *end != '\0' || parsed_index < 0)
+            {
+                fputs("--inspect-map-load index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            inspect_map_load = 1;
+            inspect_map_load_index = (size_t)parsed_index;
             continue;
         }
 
@@ -1723,6 +1764,75 @@ int main(int argc, char **argv)
             loaded_map.plane_words[1][(63 * 64) + 63]);
         printf("map%zu plane2 cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
             inspect_map_overview_index,
+            loaded_map.plane_words[2][0],
+            loaded_map.plane_words[2][(31 * 64) + 31],
+            loaded_map.plane_words[2][(32 * 64) + 32],
+            loaded_map.plane_words[2][(63 * 64) + 63]);
+        return 0;
+    }
+
+    if (inspect_map_load)
+    {
+        const wolf_map_plane_load_result *plane_result0 = NULL;
+        const wolf_map_plane_load_result *plane_result1 = NULL;
+        const wolf_map_plane_load_result *plane_result2 = NULL;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_map(data_path, inspect_map_load_index, &loaded_map, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_plane_result(&loaded_map, 0, &plane_result0)
+            || !wolf_map_get_plane_result(&loaded_map, 1, &plane_result1)
+            || !wolf_map_get_plane_result(&loaded_map, 2, &plane_result2))
+        {
+            fputs("could not inspect loaded map plane results\n", stderr);
+            return 1;
+        }
+
+        printf("map%zu load name: %s\n", inspect_map_load_index, loaded_map.summary.name);
+        printf("map%zu load size: %ux%u\n", inspect_map_load_index, loaded_map.summary.width, loaded_map.summary.height);
+        printf("map%zu plane0 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+            inspect_map_load_index,
+            plane_result0->compressed_bytes,
+            plane_result0->carmack_expanded_bytes,
+            plane_result0->rlew_expanded_bytes,
+            plane_result0->decoded_words);
+        printf("map%zu plane1 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+            inspect_map_load_index,
+            plane_result1->compressed_bytes,
+            plane_result1->carmack_expanded_bytes,
+            plane_result1->rlew_expanded_bytes,
+            plane_result1->decoded_words);
+        printf("map%zu plane2 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+            inspect_map_load_index,
+            plane_result2->compressed_bytes,
+            plane_result2->carmack_expanded_bytes,
+            plane_result2->rlew_expanded_bytes,
+            plane_result2->decoded_words);
+        printf("map%zu plane0 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            inspect_map_load_index,
+            loaded_map.plane_words[0][0],
+            loaded_map.plane_words[0][(31 * 64) + 31],
+            loaded_map.plane_words[0][(32 * 64) + 32],
+            loaded_map.plane_words[0][(63 * 64) + 63]);
+        printf("map%zu plane1 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            inspect_map_load_index,
+            loaded_map.plane_words[1][0],
+            loaded_map.plane_words[1][(31 * 64) + 31],
+            loaded_map.plane_words[1][(32 * 64) + 32],
+            loaded_map.plane_words[1][(63 * 64) + 63]);
+        printf("map%zu plane2 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            inspect_map_load_index,
             loaded_map.plane_words[2][0],
             loaded_map.plane_words[2][(31 * 64) + 31],
             loaded_map.plane_words[2][(32 * 64) + 32],

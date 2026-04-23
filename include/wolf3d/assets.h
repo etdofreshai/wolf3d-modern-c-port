@@ -93,6 +93,7 @@ bool wolf_load_first_map_plane_words(const char *data_dir, size_t plane_index, u
 bool wolf_load_map(const char *data_dir, size_t map_index, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size);
 bool wolf_load_first_map(const char *data_dir, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size);
 bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, size_t *index);
+bool wolf_map_get_plane_result(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_load_result **result);
 bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, const uint16_t **words, size_t *word_count);
 bool wolf_map_get_row(const wolf_loaded_map *map, size_t plane_index, size_t y, const uint16_t **row_words, size_t *row_length);
 bool wolf_map_get_column(const wolf_loaded_map *map, size_t plane_index, size_t x, uint16_t *column_words, size_t column_capacity, size_t *column_length);

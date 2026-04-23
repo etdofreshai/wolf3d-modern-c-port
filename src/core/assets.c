@@ -1264,6 +1264,22 @@ bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, si
     return true;
 }
 
+bool wolf_map_get_plane_result(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_load_result **result)
+{
+    if (map == NULL || result == NULL || plane_index >= 3)
+    {
+        return false;
+    }
+
+    if (map->summary.width == 0 || map->summary.height == 0 || map->summary.width > 64 || map->summary.height > 64)
+    {
+        return false;
+    }
+
+    *result = &map->plane_results[plane_index];
+    return true;
+}
+
 bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, const uint16_t **words, size_t *word_count)
 {
     if (map == NULL || words == NULL || word_count == NULL || plane_index >= 3)
