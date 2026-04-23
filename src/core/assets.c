@@ -679,7 +679,21 @@ bool wolf_validate_map_catalog(const char *data_dir, size_t count, bool *valid_f
 
     for (index = 0; index < limit; ++index)
     {
+        uint32_t map_offset = 0;
+        bool is_present = false;
+
         valid_flags[index] = false;
+        if (!wolf_read_map_slot(data_dir, index, &map_offset, &is_present, error_buffer, error_buffer_size))
+        {
+            return false;
+        }
+
+        (void)map_offset;
+        if (!is_present)
+        {
+            continue;
+        }
+
         if (!wolf_validate_map(data_dir, index, NULL, NULL, error_buffer, error_buffer_size))
         {
             return false;
