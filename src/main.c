@@ -620,60 +620,111 @@ static int run_present_map_helper_self_test(void)
 
 static void print_loaded_map_summary(const char *label_prefix, const wolf_loaded_map *map)
 {
-    const wolf_map_plane_load_result *plane_result0 = NULL;
-    const wolf_map_plane_load_result *plane_result1 = NULL;
-    const wolf_map_plane_load_result *plane_result2 = NULL;
+    size_t plane_index;
 
     if (label_prefix == NULL || map == NULL)
     {
         return;
     }
 
-    if (!wolf_map_get_plane_result(map, 0, &plane_result0)
-        || !wolf_map_get_plane_result(map, 1, &plane_result1)
-        || !wolf_map_get_plane_result(map, 2, &plane_result2))
+    printf("%s load name: %s\n", label_prefix, map->summary.name);
+    printf("%s load size: %ux%u\n", label_prefix, map->summary.width, map->summary.height);
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        const wolf_map_plane_header *plane_header = NULL;
+        const wolf_map_plane_load_result *plane_result = NULL;
+
+        if (!wolf_map_get_plane_header(map, plane_index, &plane_header)
+            || !wolf_map_get_plane_result(map, plane_index, &plane_result))
+        {
+            return;
+        }
+
+        printf("%s plane%zu header: offset=%u length=%u carmack=%u rlew=%u words=%zu\n",
+            label_prefix,
+            plane_index,
+            plane_header->offset,
+            plane_header->length,
+            plane_header->carmack_expanded_bytes,
+            plane_header->rlew_expanded_bytes,
+            plane_header->decoded_words);
+        printf("%s plane%zu result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+            label_prefix,
+            plane_index,
+            plane_result->compressed_bytes,
+            plane_result->carmack_expanded_bytes,
+            plane_result->rlew_expanded_bytes,
+            plane_result->decoded_words);
+        printf("%s plane%zu header/result match: %s\n",
+            label_prefix,
+            plane_index,
+            wolf_map_plane_load_result_matches_header(plane_header, plane_result) ? "yes" : "no");
+        printf("%s plane%zu sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            label_prefix,
+            plane_index,
+            map->plane_words[plane_index][0],
+            map->plane_words[plane_index][(31 * 64) + 31],
+            map->plane_words[plane_index][(32 * 64) + 32],
+            map->plane_words[plane_index][(63 * 64) + 63]);
+    }
+}
+
+static void print_loaded_present_map_summary(const wolf_loaded_present_map *present_map)
+{
+    size_t plane_index;
+
+    if (present_map == NULL)
     {
         return;
     }
 
-    printf("%s load name: %s\n", label_prefix, map->summary.name);
-    printf("%s load size: %ux%u\n", label_prefix, map->summary.width, map->summary.height);
-    printf("%s plane0 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-        label_prefix,
-        plane_result0->compressed_bytes,
-        plane_result0->carmack_expanded_bytes,
-        plane_result0->rlew_expanded_bytes,
-        plane_result0->decoded_words);
-    printf("%s plane1 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-        label_prefix,
-        plane_result1->compressed_bytes,
-        plane_result1->carmack_expanded_bytes,
-        plane_result1->rlew_expanded_bytes,
-        plane_result1->decoded_words);
-    printf("%s plane2 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-        label_prefix,
-        plane_result2->compressed_bytes,
-        plane_result2->carmack_expanded_bytes,
-        plane_result2->rlew_expanded_bytes,
-        plane_result2->decoded_words);
-    printf("%s plane0 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-        label_prefix,
-        map->plane_words[0][0],
-        map->plane_words[0][(31 * 64) + 31],
-        map->plane_words[0][(32 * 64) + 32],
-        map->plane_words[0][(63 * 64) + 63]);
-    printf("%s plane1 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-        label_prefix,
-        map->plane_words[1][0],
-        map->plane_words[1][(31 * 64) + 31],
-        map->plane_words[1][(32 * 64) + 32],
-        map->plane_words[1][(63 * 64) + 63]);
-    printf("%s plane2 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-        label_prefix,
-        map->plane_words[2][0],
-        map->plane_words[2][(31 * 64) + 31],
-        map->plane_words[2][(32 * 64) + 32],
-        map->plane_words[2][(63 * 64) + 63]);
+    printf("present map load slot: %zu\n", present_map->slot_index);
+    printf("present map load name: %s\n", present_map->map.summary.name);
+    printf("present map load size: %ux%u\n", present_map->map.summary.width, present_map->map.summary.height);
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        const wolf_map_plane_header *plane_header = NULL;
+        const wolf_map_plane_load_result *plane_result = NULL;
+        uint16_t top_left = 0;
+        uint16_t mid_left = 0;
+        uint16_t center = 0;
+        uint16_t bottom_right = 0;
+
+        if (!wolf_present_map_get_plane_header(present_map, plane_index, &plane_header)
+            || !wolf_present_map_get_plane_result(present_map, plane_index, &plane_result)
+            || !wolf_present_map_get_cell(present_map, plane_index, 0, 0, &top_left)
+            || !wolf_present_map_get_cell(present_map, plane_index, 31, 31, &mid_left)
+            || !wolf_present_map_get_cell(present_map, plane_index, 32, 32, &center)
+            || !wolf_present_map_get_cell(present_map, plane_index, 63, 63, &bottom_right))
+        {
+            return;
+        }
+
+        printf("present map plane%zu header: offset=%u length=%u carmack=%u rlew=%u words=%zu\n",
+            plane_index,
+            plane_header->offset,
+            plane_header->length,
+            plane_header->carmack_expanded_bytes,
+            plane_header->rlew_expanded_bytes,
+            plane_header->decoded_words);
+        printf("present map plane%zu result: compressed=%u carmack=%u rlew=%u words=%zu\n",
+            plane_index,
+            plane_result->compressed_bytes,
+            plane_result->carmack_expanded_bytes,
+            plane_result->rlew_expanded_bytes,
+            plane_result->decoded_words);
+        printf("present map plane%zu header/result match: %s\n",
+            plane_index,
+            wolf_map_plane_load_result_matches_header(plane_header, plane_result) ? "yes" : "no");
+        printf("present map plane%zu sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
+            plane_index,
+            top_left,
+            mid_left,
+            center,
+            bottom_right);
+    }
 }
 
 static int run_map_plane_header_helper_self_test(void)
@@ -2684,8 +2735,6 @@ int main(int argc, char **argv)
     if (inspect_present_map_load)
     {
         wolf_loaded_present_map present_map;
-        const wolf_map_plane_load_result *plane_result = NULL;
-        size_t plane_index;
 
         if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
         {
@@ -2707,40 +2756,7 @@ int main(int argc, char **argv)
         }
 
         printf("present map load index: %zu\n", inspect_present_map_load_index);
-        printf("present map load slot: %zu\n", present_map.slot_index);
-        printf("present map load name: %s\n", present_map.map.summary.name);
-        printf("present map load size: %ux%u\n", present_map.map.summary.width, present_map.map.summary.height);
-        for (plane_index = 0; plane_index < 3; ++plane_index)
-        {
-            uint16_t top_left = 0;
-            uint16_t mid_left = 0;
-            uint16_t center = 0;
-            uint16_t bottom_right = 0;
-
-            if (!wolf_map_get_plane_result(&present_map.map, plane_index, &plane_result)
-                || !wolf_map_get_cell(&present_map.map, plane_index, 0, 0, &top_left)
-                || !wolf_map_get_cell(&present_map.map, plane_index, 31, 31, &mid_left)
-                || !wolf_map_get_cell(&present_map.map, plane_index, 32, 32, &center)
-                || !wolf_map_get_cell(&present_map.map, plane_index, 63, 63, &bottom_right))
-            {
-                fputs("could not inspect loaded present map\n", stderr);
-                return 1;
-            }
-
-            printf("present map plane%zu result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-                plane_index,
-                plane_result->compressed_bytes,
-                plane_result->carmack_expanded_bytes,
-                plane_result->rlew_expanded_bytes,
-                plane_result->decoded_words);
-            printf("present map plane%zu sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-                plane_index,
-                top_left,
-                mid_left,
-                center,
-                bottom_right);
-        }
-
+        print_loaded_present_map_summary(&present_map);
         return 0;
     }
 
@@ -3531,9 +3547,7 @@ int main(int argc, char **argv)
 
     if (inspect_map_load)
     {
-        const wolf_map_plane_load_result *plane_result0 = NULL;
-        const wolf_map_plane_load_result *plane_result1 = NULL;
-        const wolf_map_plane_load_result *plane_result2 = NULL;
+        char label_prefix[64];
 
         if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
         {
@@ -3549,52 +3563,8 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        if (!wolf_map_get_plane_result(&loaded_map, 0, &plane_result0)
-            || !wolf_map_get_plane_result(&loaded_map, 1, &plane_result1)
-            || !wolf_map_get_plane_result(&loaded_map, 2, &plane_result2))
-        {
-            fputs("could not inspect loaded map plane results\n", stderr);
-            return 1;
-        }
-
-        printf("map%zu load name: %s\n", inspect_map_load_index, loaded_map.summary.name);
-        printf("map%zu load size: %ux%u\n", inspect_map_load_index, loaded_map.summary.width, loaded_map.summary.height);
-        printf("map%zu plane0 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-            inspect_map_load_index,
-            plane_result0->compressed_bytes,
-            plane_result0->carmack_expanded_bytes,
-            plane_result0->rlew_expanded_bytes,
-            plane_result0->decoded_words);
-        printf("map%zu plane1 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-            inspect_map_load_index,
-            plane_result1->compressed_bytes,
-            plane_result1->carmack_expanded_bytes,
-            plane_result1->rlew_expanded_bytes,
-            plane_result1->decoded_words);
-        printf("map%zu plane2 result: compressed=%u carmack=%u rlew=%u words=%zu\n",
-            inspect_map_load_index,
-            plane_result2->compressed_bytes,
-            plane_result2->carmack_expanded_bytes,
-            plane_result2->rlew_expanded_bytes,
-            plane_result2->decoded_words);
-        printf("map%zu plane0 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-            inspect_map_load_index,
-            loaded_map.plane_words[0][0],
-            loaded_map.plane_words[0][(31 * 64) + 31],
-            loaded_map.plane_words[0][(32 * 64) + 32],
-            loaded_map.plane_words[0][(63 * 64) + 63]);
-        printf("map%zu plane1 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-            inspect_map_load_index,
-            loaded_map.plane_words[1][0],
-            loaded_map.plane_words[1][(31 * 64) + 31],
-            loaded_map.plane_words[1][(32 * 64) + 32],
-            loaded_map.plane_words[1][(63 * 64) + 63]);
-        printf("map%zu plane2 sample cells: [0,0]=%u [31,31]=%u [32,32]=%u [63,63]=%u\n",
-            inspect_map_load_index,
-            loaded_map.plane_words[2][0],
-            loaded_map.plane_words[2][(31 * 64) + 31],
-            loaded_map.plane_words[2][(32 * 64) + 32],
-            loaded_map.plane_words[2][(63 * 64) + 63]);
+        snprintf(label_prefix, sizeof(label_prefix), "map%zu", inspect_map_load_index);
+        print_loaded_map_summary(label_prefix, &loaded_map);
         return 0;
     }
 
