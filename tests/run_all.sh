@@ -147,5 +147,8 @@ fi
 if [[ -x "$ROOT/tests/present_map_load_validation.sh" ]]; then
   "$ROOT/tests/present_map_load_validation.sh"
 fi
+if [[ -x "$ROOT/tests/present_map_cli_overflow_validation.sh" ]]; then
+  "$ROOT/tests/present_map_cli_overflow_validation.sh"
+fi
 
 echo "all automated checks passed"

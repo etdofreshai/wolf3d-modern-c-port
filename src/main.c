@@ -13,6 +13,27 @@ const char *wolf_port_version(void)
     return WOLF3D_PORT_VERSION;
 }
 
+static int parse_non_negative_long(const char *text, long *value)
+{
+    char *end = NULL;
+    long parsed_value;
+
+    if (text == NULL || value == NULL)
+    {
+        return 0;
+    }
+
+    errno = 0;
+    parsed_value = strtol(text, &end, 10);
+    if (errno == ERANGE || end == text || *end != '\0' || parsed_value < 0)
+    {
+        return 0;
+    }
+
+    *value = parsed_value;
+    return 1;
+}
+
 static int run_carmack_self_test(void)
 {
     static const uint8_t literal_encoded[] = {
@@ -1211,7 +1232,6 @@ int main(int argc, char **argv)
 
         if (strcmp(argv[i], "--inspect-present-map-load") == 0)
         {
-            char *end = NULL;
             long parsed_index;
             if ((i + 1) >= argc)
             {
@@ -1219,8 +1239,7 @@ int main(int argc, char **argv)
                 return 1;
             }
 
-            parsed_index = strtol(argv[++i], &end, 10);
-            if (end == argv[i] || *end != '\0' || parsed_index < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_index))
             {
                 fputs("--inspect-present-map-load index must be a non-negative integer\n", stderr);
                 return 1;
@@ -1313,9 +1332,6 @@ int main(int argc, char **argv)
 
         if (strcmp(argv[i], "--inspect-present-map-column") == 0)
         {
-            char *map_end = NULL;
-            char *plane_end = NULL;
-            char *x_end = NULL;
             long parsed_map_index;
             long parsed_plane_index;
             long parsed_x;
@@ -1325,20 +1341,17 @@ int main(int argc, char **argv)
                 return 1;
             }
 
-            parsed_map_index = strtol(argv[++i], &map_end, 10);
-            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
-            parsed_x = strtol(argv[++i], &x_end, 10);
-            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_map_index))
             {
                 fputs("--inspect-present-map-column index must be a non-negative integer\n", stderr);
                 return 1;
             }
-            if (plane_end == argv[i - 1] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            if (!parse_non_negative_long(argv[++i], &parsed_plane_index) || parsed_plane_index > 2)
             {
                 fputs("--inspect-present-map-column plane index must be 0, 1, or 2\n", stderr);
                 return 1;
             }
-            if (x_end == argv[i] || *x_end != '\0' || parsed_x < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_x))
             {
                 fputs("--inspect-present-map-column x must be a non-negative integer\n", stderr);
                 return 1;
