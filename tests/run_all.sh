@@ -33,6 +33,9 @@ fi
 if [[ -x "$ROOT/tests/map_plane_header_helper_selftest.sh" ]]; then
   "$ROOT/tests/map_plane_header_helper_selftest.sh"
 fi
+if [[ -x "$ROOT/tests/map_plane_table_helper_selftest.sh" ]]; then
+  "$ROOT/tests/map_plane_table_helper_selftest.sh"
+fi
 if [[ -x "$ROOT/tests/present_map_helper_selftest.sh" ]]; then
   "$ROOT/tests/present_map_helper_selftest.sh"
 fi
@@ -59,6 +62,9 @@ if [[ -x "$ROOT/tests/map_load_inspection.sh" ]]; then
 fi
 if [[ -x "$ROOT/tests/map_load_header_helper_inspection.sh" ]]; then
   "$ROOT/tests/map_load_header_helper_inspection.sh"
+fi
+if [[ -x "$ROOT/tests/map_load_plane_table_helper_inspection.sh" ]]; then
+  "$ROOT/tests/map_load_plane_table_helper_inspection.sh"
 fi
 if [[ -x "$ROOT/tests/map_load_catalog.sh" ]]; then
   "$ROOT/tests/map_load_catalog.sh"

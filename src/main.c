@@ -618,6 +618,33 @@ static int run_present_map_helper_self_test(void)
     return 0;
 }
 
+static void print_loaded_map_plane_table_summary(const char *label_prefix, const wolf_loaded_map *map)
+{
+    wolf_map_plane_table table;
+    size_t plane_index;
+
+    if (label_prefix == NULL || map == NULL)
+    {
+        return;
+    }
+
+    if (!wolf_map_get_plane_table(map, &table))
+    {
+        return;
+    }
+
+    printf("%s load table name: %s\n", label_prefix, table.summary.name);
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        printf("%s load table plane%zu offset: %u length: %u words: %zu\n",
+            label_prefix,
+            plane_index,
+            table.headers[plane_index].offset,
+            table.headers[plane_index].length,
+            table.headers[plane_index].decoded_words);
+    }
+}
+
 static void print_loaded_map_summary(const char *label_prefix, const wolf_loaded_map *map)
 {
     size_t plane_index;
@@ -629,6 +656,7 @@ static void print_loaded_map_summary(const char *label_prefix, const wolf_loaded
 
     printf("%s load name: %s\n", label_prefix, map->summary.name);
     printf("%s load size: %ux%u\n", label_prefix, map->summary.width, map->summary.height);
+    print_loaded_map_plane_table_summary(label_prefix, map);
 
     for (plane_index = 0; plane_index < 3; ++plane_index)
     {
@@ -670,6 +698,33 @@ static void print_loaded_map_summary(const char *label_prefix, const wolf_loaded
     }
 }
 
+static void print_loaded_present_map_plane_table_summary(const wolf_loaded_present_map *present_map)
+{
+    wolf_present_map_plane_table table;
+    size_t plane_index;
+
+    if (present_map == NULL)
+    {
+        return;
+    }
+
+    if (!wolf_present_map_get_plane_table(present_map, &table))
+    {
+        return;
+    }
+
+    printf("present map load table slot: %zu\n", table.slot_index);
+    printf("present map load table name: %s\n", table.table.summary.name);
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        printf("present map load table plane%zu offset: %u length: %u words: %zu\n",
+            plane_index,
+            table.table.headers[plane_index].offset,
+            table.table.headers[plane_index].length,
+            table.table.headers[plane_index].decoded_words);
+    }
+}
+
 static void print_loaded_present_map_summary(const wolf_loaded_present_map *present_map)
 {
     size_t plane_index;
@@ -682,6 +737,7 @@ static void print_loaded_present_map_summary(const wolf_loaded_present_map *pres
     printf("present map load slot: %zu\n", present_map->slot_index);
     printf("present map load name: %s\n", present_map->map.summary.name);
     printf("present map load size: %ux%u\n", present_map->map.summary.width, present_map->map.summary.height);
+    print_loaded_present_map_plane_table_summary(present_map);
 
     for (plane_index = 0; plane_index < 3; ++plane_index)
     {
@@ -789,6 +845,81 @@ static int run_map_plane_header_helper_self_test(void)
         return 1;
     }
     puts("present map plane header helper invalid plane ok");
+
+    return 0;
+}
+
+static int run_map_plane_table_helper_self_test(void)
+{
+    wolf_loaded_map map;
+    wolf_loaded_present_map present_map;
+    wolf_map_plane_table table;
+    wolf_present_map_plane_table present_table;
+
+    memset(&map, 0, sizeof(map));
+    map.summary.width = 64;
+    map.summary.height = 64;
+    memcpy(map.summary.name, "TableMap", sizeof("TableMap"));
+    map.plane_headers[0].offset = 11;
+    map.plane_headers[0].length = 1434;
+    map.plane_headers[0].decoded_words = 4096;
+    map.plane_headers[1].offset = 1445;
+    map.plane_headers[1].length = 795;
+    map.plane_headers[1].decoded_words = 2048;
+    map.plane_headers[2].offset = 2240;
+    map.plane_headers[2].length = 10;
+    map.plane_headers[2].decoded_words = 4096;
+
+    if (!wolf_map_get_plane_table(&map, &table)
+        || strcmp(table.summary.name, "TableMap") != 0
+        || table.headers[1].offset != 1445
+        || table.headers[1].decoded_words != 2048)
+    {
+        fputs("map plane table helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map plane table helper ok: name=%s plane1 offset=%u words=%zu\n",
+        table.summary.name,
+        table.headers[1].offset,
+        table.headers[1].decoded_words);
+
+    if (!wolf_map_get_plane_table(&map, NULL))
+    {
+        fputs("map plane table helper null-output self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane table helper null output ok");
+
+    memset(&present_map, 0, sizeof(present_map));
+    present_map.slot_index = 7;
+    present_map.map.summary.width = 1;
+    present_map.map.summary.height = 2;
+    memcpy(present_map.map.summary.name, "PresentTable", sizeof("PresentTable"));
+    present_map.map.plane_headers[0].offset = 25;
+    present_map.map.plane_headers[0].length = 10;
+    present_map.map.plane_headers[0].decoded_words = 2;
+
+    if (!wolf_present_map_get_plane_table(&present_map, &present_table)
+        || present_table.slot_index != 7
+        || strcmp(present_table.table.summary.name, "PresentTable") != 0
+        || present_table.table.headers[0].length != 10
+        || present_table.table.headers[0].decoded_words != 2)
+    {
+        fputs("present map plane table helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map plane table helper ok: slot=%zu name=%s plane0 length=%u words=%zu\n",
+        present_table.slot_index,
+        present_table.table.summary.name,
+        present_table.table.headers[0].length,
+        present_table.table.headers[0].decoded_words);
+
+    if (!wolf_present_map_get_plane_table(&present_map, NULL))
+    {
+        fputs("present map plane table helper null-output self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map plane table helper null output ok");
 
     return 0;
 }
@@ -1083,6 +1214,7 @@ int main(int argc, char **argv)
     int self_test_map_plane_header_bytes = 0;
     int self_test_map_helpers = 0;
     int self_test_map_plane_header_helpers = 0;
+    int self_test_map_plane_table_helpers = 0;
     int self_test_present_map_helpers = 0;
     int self_test_map_validation = 0;
     int inspect_first_map_plane = 0;
@@ -1800,6 +1932,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-map-plane-header-helpers") == 0)
         {
             self_test_map_plane_header_helpers = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-plane-table-helpers") == 0)
+        {
+            self_test_map_plane_table_helpers = 1;
             continue;
         }
 
@@ -3474,6 +3612,11 @@ int main(int argc, char **argv)
     if (self_test_map_plane_header_helpers)
     {
         return run_map_plane_header_helper_self_test();
+    }
+
+    if (self_test_map_plane_table_helpers)
+    {
+        return run_map_plane_table_helper_self_test();
     }
 
     if (self_test_present_map_helpers)

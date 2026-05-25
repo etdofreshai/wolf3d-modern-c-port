@@ -2105,6 +2105,27 @@ bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, si
     return true;
 }
 
+bool wolf_map_get_plane_table(const wolf_loaded_map *map, wolf_map_plane_table *table)
+{
+    if (map == NULL)
+    {
+        return false;
+    }
+
+    if (map->summary.width == 0 || map->summary.height == 0 || map->summary.width > 64 || map->summary.height > 64)
+    {
+        return false;
+    }
+
+    if (table != NULL)
+    {
+        table->summary = map->summary;
+        memcpy(table->headers, map->plane_headers, sizeof(table->headers));
+    }
+
+    return true;
+}
+
 bool wolf_map_get_plane_header(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_header **header)
 {
     if (map == NULL || header == NULL || plane_index >= 3)
@@ -2300,6 +2321,26 @@ bool wolf_present_map_get_slot_index(const wolf_loaded_present_map *entry, size_
     }
 
     *slot_index = entry->slot_index;
+    return true;
+}
+
+bool wolf_present_map_get_plane_table(const wolf_loaded_present_map *entry, wolf_present_map_plane_table *table)
+{
+    if (entry == NULL)
+    {
+        return false;
+    }
+
+    if (!wolf_map_get_plane_table(&entry->map, table != NULL ? &table->table : NULL))
+    {
+        return false;
+    }
+
+    if (table != NULL)
+    {
+        table->slot_index = entry->slot_index;
+    }
+
     return true;
 }
 

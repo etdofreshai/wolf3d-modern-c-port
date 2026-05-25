@@ -128,6 +128,7 @@ bool wolf_load_first_map_plane_words(const char *data_dir, size_t plane_index, u
 bool wolf_load_map(const char *data_dir, size_t map_index, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size);
 bool wolf_load_first_map(const char *data_dir, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size);
 bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, size_t *index);
+bool wolf_map_get_plane_table(const wolf_loaded_map *map, wolf_map_plane_table *table);
 bool wolf_map_get_plane_header(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_header **header);
 bool wolf_map_get_plane_result(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_load_result **result);
 bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, const uint16_t **words, size_t *word_count);
@@ -136,6 +137,7 @@ bool wolf_map_get_column(const wolf_loaded_map *map, size_t plane_index, size_t 
 bool wolf_map_get_region(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t *region_words, size_t region_capacity, size_t *region_word_count);
 bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value);
 bool wolf_present_map_get_slot_index(const wolf_loaded_present_map *entry, size_t *slot_index);
+bool wolf_present_map_get_plane_table(const wolf_loaded_present_map *entry, wolf_present_map_plane_table *table);
 bool wolf_present_map_get_plane_header(const wolf_loaded_present_map *entry, size_t plane_index, const wolf_map_plane_header **header);
 bool wolf_present_map_get_plane_result(const wolf_loaded_present_map *entry, size_t plane_index, const wolf_map_plane_load_result **result);
 bool wolf_present_map_get_plane_words(const wolf_loaded_present_map *entry, size_t plane_index, const uint16_t **words, size_t *word_count);
