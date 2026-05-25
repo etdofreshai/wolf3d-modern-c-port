@@ -2413,6 +2413,44 @@ bool wolf_map_get_cell_triplet(const wolf_loaded_map *map, size_t x, size_t y, u
     return true;
 }
 
+bool wolf_map_get_region_triplets(const wolf_loaded_map *map, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t triplets[][3], size_t triplet_capacity, size_t *triplet_count)
+{
+    size_t row;
+    size_t column;
+    size_t write_index = 0;
+
+    if (map == NULL || triplets == NULL || triplet_count == NULL)
+    {
+        return false;
+    }
+
+    if (region_width == 0
+        || region_height == 0
+        || x >= map->summary.width
+        || y >= map->summary.height
+        || region_width > ((size_t)map->summary.width - x)
+        || region_height > ((size_t)map->summary.height - y)
+        || triplet_capacity < (region_width * region_height))
+    {
+        return false;
+    }
+
+    for (row = 0; row < region_height; ++row)
+    {
+        for (column = 0; column < region_width; ++column)
+        {
+            if (!wolf_map_get_cell_triplet(map, x + column, y + row, triplets[write_index]))
+            {
+                return false;
+            }
+            write_index += 1;
+        }
+    }
+
+    *triplet_count = write_index;
+    return true;
+}
+
 bool wolf_present_map_get_slot_index(const wolf_loaded_present_map *entry, size_t *slot_index)
 {
     if (entry == NULL || slot_index == NULL)

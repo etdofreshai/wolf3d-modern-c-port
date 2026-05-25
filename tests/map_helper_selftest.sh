@@ -27,6 +27,8 @@ for expected in \
   "map helper region ok: count=4 top-left=101 bottom-right=106" \
   "map helper cell ok: 107" \
   "map helper cell triplet ok: 7,107,207" \
+  "map helper region triplets ok: count=4 first=1,101,201 last=6,106,206" \
+  "map helper region triplets short buffer ok" \
   "map helper oob index ok" \
   "map helper oob row ok" \
   "map helper oob cell ok" \

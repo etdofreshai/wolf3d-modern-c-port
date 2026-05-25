@@ -416,6 +416,8 @@ static int run_map_helper_self_test(void)
     size_t copied_word_count = 0;
     uint16_t region_words[12];
     size_t region_word_count = 0;
+    uint16_t region_triplets[4][3];
+    size_t region_triplet_count = 0;
     uint16_t cell_value = 0;
     uint16_t cell_triplet[3];
     size_t i;
@@ -521,6 +523,34 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     printf("map helper cell triplet ok: %u,%u,%u\n", cell_triplet[0], cell_triplet[1], cell_triplet[2]);
+
+    if (!wolf_map_get_region_triplets(&map, 1, 0, 2, 2, region_triplets, (sizeof(region_triplets) / sizeof(region_triplets[0])), &region_triplet_count)
+        || region_triplet_count != 4
+        || region_triplets[0][0] != 1
+        || region_triplets[0][1] != 101
+        || region_triplets[0][2] != 201
+        || region_triplets[3][0] != 6
+        || region_triplets[3][1] != 106
+        || region_triplets[3][2] != 206)
+    {
+        fputs("map helper region-triplets self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper region triplets ok: count=%zu first=%u,%u,%u last=%u,%u,%u\n",
+        region_triplet_count,
+        region_triplets[0][0],
+        region_triplets[0][1],
+        region_triplets[0][2],
+        region_triplets[3][0],
+        region_triplets[3][1],
+        region_triplets[3][2]);
+
+    if (wolf_map_get_region_triplets(&map, 1, 0, 2, 2, region_triplets, 3, &region_triplet_count))
+    {
+        fputs("map helper region-triplets short-buffer self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper region triplets short buffer ok");
 
     if (wolf_map_cell_index(&map.summary, 4, 0, &index))
     {

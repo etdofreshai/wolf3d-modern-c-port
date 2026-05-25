@@ -141,6 +141,7 @@ bool wolf_map_get_column(const wolf_loaded_map *map, size_t plane_index, size_t 
 bool wolf_map_get_region(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t *region_words, size_t region_capacity, size_t *region_word_count);
 bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x, size_t y, uint16_t *value);
 bool wolf_map_get_cell_triplet(const wolf_loaded_map *map, size_t x, size_t y, uint16_t values[3]);
+bool wolf_map_get_region_triplets(const wolf_loaded_map *map, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t triplets[][3], size_t triplet_capacity, size_t *triplet_count);
 bool wolf_present_map_get_slot_index(const wolf_loaded_present_map *entry, size_t *slot_index);
 bool wolf_present_map_get_summary(const wolf_loaded_present_map *entry, const wolf_map_summary **summary);
 bool wolf_present_map_get_plane_table(const wolf_loaded_present_map *entry, wolf_present_map_plane_table *table);
