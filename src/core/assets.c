@@ -213,6 +213,11 @@ bool wolf_read_maphead_summary(const char *data_dir, wolf_maphead_summary *summa
         set_error(error_buffer, error_buffer_size, "MAPHEAD.WL6 is too small");
         return false;
     }
+    if (((file_size - 2) % 4) != 0)
+    {
+        set_error(error_buffer, error_buffer_size, "MAPHEAD.WL6 offset table is truncated");
+        return false;
+    }
 
     summary->rlew_tag = read_u16_le(header);
     summary->map_count = (size_t)((file_size - 2) / 4);

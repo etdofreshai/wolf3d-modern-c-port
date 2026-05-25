@@ -6,6 +6,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 "$ROOT/tests/smoke_version.sh"
 "$ROOT/tests/data_path_validation.sh"
 "$ROOT/tests/maphead_inspection.sh"
+if [[ -x "$ROOT/tests/maphead_alignment_validation.sh" ]]; then
+  "$ROOT/tests/maphead_alignment_validation.sh"
+fi
 if [[ -x "$ROOT/tests/gamemaps_inspection.sh" ]]; then
   "$ROOT/tests/gamemaps_inspection.sh"
 fi
