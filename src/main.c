@@ -412,6 +412,8 @@ static int run_map_helper_self_test(void)
     size_t index = 0;
     uint16_t column_words[64];
     size_t column_length = 0;
+    uint16_t copied_plane_words[12];
+    size_t copied_word_count = 0;
     uint16_t region_words[12];
     size_t region_word_count = 0;
     uint16_t cell_value = 0;
@@ -452,6 +454,23 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     printf("map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[11]);
+
+    if (!wolf_map_copy_plane_words(&map, 1, copied_plane_words, (sizeof(copied_plane_words) / sizeof(copied_plane_words[0])), &copied_word_count)
+        || copied_word_count != 12
+        || copied_plane_words[0] != 100
+        || copied_plane_words[11] != 111)
+    {
+        fputs("map helper copy-plane self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper copy plane ok: count=%zu first=%u last=%u\n", copied_word_count, copied_plane_words[0], copied_plane_words[11]);
+
+    if (wolf_map_copy_plane_words(&map, 1, copied_plane_words, 11, &copied_word_count))
+    {
+        fputs("map helper copy-plane short-buffer self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper copy plane short buffer ok");
 
     if (!wolf_map_get_row(&map, 1, 1, &row_words, &row_length)
         || row_length != 4
@@ -610,6 +629,8 @@ static int run_present_map_helper_self_test(void)
     size_t row_length = 0;
     uint16_t column_words[64];
     size_t column_length = 0;
+    uint16_t copied_plane_words[6];
+    size_t copied_word_count = 0;
     uint16_t region_words[12];
     size_t region_word_count = 0;
     uint16_t cell_value = 0;
@@ -653,6 +674,16 @@ static int run_present_map_helper_self_test(void)
         return 1;
     }
     printf("present map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[5]);
+
+    if (!wolf_present_map_copy_plane_words(&present_map, 0, copied_plane_words, (sizeof(copied_plane_words) / sizeof(copied_plane_words[0])), &copied_word_count)
+        || copied_word_count != 6
+        || copied_plane_words[0] != 200
+        || copied_plane_words[5] != 205)
+    {
+        fputs("present map helper copy-plane self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper copy plane ok: count=%zu first=%u last=%u\n", copied_word_count, copied_plane_words[0], copied_plane_words[5]);
 
     if (!wolf_present_map_get_row(&present_map, 0, 1, &row_words, &row_length)
         || row_length != 3
