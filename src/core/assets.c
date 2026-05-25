@@ -2230,6 +2230,47 @@ bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, co
     return true;
 }
 
+bool wolf_map_get_plane_stats(const wolf_loaded_map *map, size_t plane_index, wolf_map_plane_stats *stats)
+{
+    const uint16_t *words;
+    size_t word_count;
+    size_t index;
+    wolf_map_plane_stats local_stats;
+
+    if (stats == NULL)
+    {
+        return false;
+    }
+
+    if (!wolf_map_get_plane_words(map, plane_index, &words, &word_count) || word_count == 0)
+    {
+        return false;
+    }
+
+    local_stats.word_count = word_count;
+    local_stats.nonzero_count = 0;
+    local_stats.min_value = words[0];
+    local_stats.max_value = words[0];
+    for (index = 0; index < word_count; ++index)
+    {
+        if (words[index] != 0)
+        {
+            local_stats.nonzero_count += 1;
+        }
+        if (words[index] < local_stats.min_value)
+        {
+            local_stats.min_value = words[index];
+        }
+        if (words[index] > local_stats.max_value)
+        {
+            local_stats.max_value = words[index];
+        }
+    }
+
+    *stats = local_stats;
+    return true;
+}
+
 bool wolf_map_copy_plane_words(const wolf_loaded_map *map, size_t plane_index, uint16_t *dest, size_t dest_capacity, size_t *word_count)
 {
     const uint16_t *words;

@@ -406,6 +406,7 @@ static int run_map_helper_self_test(void)
     wolf_loaded_map map;
     const wolf_map_plane_load_result *plane_result = NULL;
     const uint16_t *plane_words = NULL;
+    wolf_map_plane_stats plane_stats;
     const uint16_t *row_words = NULL;
     size_t word_count = 0;
     size_t row_length = 0;
@@ -462,6 +463,21 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     printf("map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[11]);
+
+    if (!wolf_map_get_plane_stats(&map, 0, &plane_stats)
+        || plane_stats.word_count != 12
+        || plane_stats.nonzero_count != 11
+        || plane_stats.min_value != 0
+        || plane_stats.max_value != 11)
+    {
+        fputs("map helper plane-stats self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper plane stats ok: count=%zu nonzero=%zu min=%u max=%u\n",
+        plane_stats.word_count,
+        plane_stats.nonzero_count,
+        plane_stats.min_value,
+        plane_stats.max_value);
 
     if (!wolf_map_copy_plane_words(&map, 1, copied_plane_words, (sizeof(copied_plane_words) / sizeof(copied_plane_words[0])), &copied_word_count)
         || copied_word_count != 12

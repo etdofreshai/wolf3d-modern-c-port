@@ -20,6 +20,7 @@ OUTPUT="$($BIN --self-test-map-helpers)"
 for expected in \
   "map helper index ok: 11" \
   "map helper plane ok: count=12 first=100 last=111" \
+  "map helper plane stats ok: count=12 nonzero=11 min=0 max=11" \
   "map helper copy plane ok: count=12 first=100 last=111" \
   "map helper copy plane short buffer ok" \
   "map helper row ok: length=4 left=104 right=107" \

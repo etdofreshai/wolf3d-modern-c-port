@@ -68,6 +68,14 @@ typedef struct wolf_map_plane_load_result
     size_t decoded_words;
 } wolf_map_plane_load_result;
 
+typedef struct wolf_map_plane_stats
+{
+    size_t word_count;
+    size_t nonzero_count;
+    uint16_t min_value;
+    uint16_t max_value;
+} wolf_map_plane_stats;
+
 typedef struct wolf_loaded_map
 {
     wolf_map_summary summary;
@@ -135,6 +143,7 @@ bool wolf_map_get_plane_table(const wolf_loaded_map *map, wolf_map_plane_table *
 bool wolf_map_get_plane_header(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_header **header);
 bool wolf_map_get_plane_result(const wolf_loaded_map *map, size_t plane_index, const wolf_map_plane_load_result **result);
 bool wolf_map_get_plane_words(const wolf_loaded_map *map, size_t plane_index, const uint16_t **words, size_t *word_count);
+bool wolf_map_get_plane_stats(const wolf_loaded_map *map, size_t plane_index, wolf_map_plane_stats *stats);
 bool wolf_map_copy_plane_words(const wolf_loaded_map *map, size_t plane_index, uint16_t *dest, size_t dest_capacity, size_t *word_count);
 bool wolf_map_get_row(const wolf_loaded_map *map, size_t plane_index, size_t y, const uint16_t **row_words, size_t *row_length);
 bool wolf_map_copy_row(const wolf_loaded_map *map, size_t plane_index, size_t y, uint16_t *dest, size_t dest_capacity, size_t *row_length);
