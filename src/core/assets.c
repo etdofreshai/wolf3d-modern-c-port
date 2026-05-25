@@ -2581,3 +2581,13 @@ bool wolf_present_map_get_cell_triplet(const wolf_loaded_present_map *entry, siz
 
     return wolf_map_get_cell_triplet(&entry->map, x, y, values);
 }
+
+bool wolf_present_map_get_region_triplets(const wolf_loaded_present_map *entry, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t triplets[][3], size_t triplet_capacity, size_t *triplet_count)
+{
+    if (entry == NULL)
+    {
+        return false;
+    }
+
+    return wolf_map_get_region_triplets(&entry->map, x, y, region_width, region_height, triplets, triplet_capacity, triplet_count);
+}

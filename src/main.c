@@ -686,6 +686,8 @@ static int run_present_map_helper_self_test(void)
     size_t region_word_count = 0;
     uint16_t cell_value = 0;
     uint16_t cell_triplet[3];
+    uint16_t region_triplets[4][3];
+    size_t region_triplet_count = 0;
     size_t i;
 
     memset(&present_map, 0, sizeof(present_map));
@@ -785,6 +787,34 @@ static int run_present_map_helper_self_test(void)
         return 1;
     }
     printf("present map helper cell triplet ok: %u,%u,%u\n", cell_triplet[0], cell_triplet[1], cell_triplet[2]);
+
+    if (!wolf_present_map_get_region_triplets(&present_map, 1, 0, 2, 2, region_triplets, (sizeof(region_triplets) / sizeof(region_triplets[0])), &region_triplet_count)
+        || region_triplet_count != 4
+        || region_triplets[0][0] != 201
+        || region_triplets[0][1] != 101
+        || region_triplets[0][2] != 301
+        || region_triplets[3][0] != 205
+        || region_triplets[3][1] != 105
+        || region_triplets[3][2] != 305)
+    {
+        fputs("present map helper region-triplets self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper region triplets ok: count=%zu first=%u,%u,%u last=%u,%u,%u\n",
+        region_triplet_count,
+        region_triplets[0][0],
+        region_triplets[0][1],
+        region_triplets[0][2],
+        region_triplets[3][0],
+        region_triplets[3][1],
+        region_triplets[3][2]);
+
+    if (wolf_present_map_get_region_triplets(&present_map, 1, 0, 2, 2, region_triplets, 3, &region_triplet_count))
+    {
+        fputs("present map helper short-region-triplets self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map helper short region triplets ok");
 
     if (wolf_present_map_get_plane_words(&present_map, 3, &plane_words, &word_count))
     {

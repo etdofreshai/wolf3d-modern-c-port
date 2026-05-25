@@ -154,5 +154,6 @@ bool wolf_present_map_get_column(const wolf_loaded_present_map *entry, size_t pl
 bool wolf_present_map_get_region(const wolf_loaded_present_map *entry, size_t plane_index, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t *region_words, size_t region_capacity, size_t *region_word_count);
 bool wolf_present_map_get_cell(const wolf_loaded_present_map *entry, size_t plane_index, size_t x, size_t y, uint16_t *value);
 bool wolf_present_map_get_cell_triplet(const wolf_loaded_present_map *entry, size_t x, size_t y, uint16_t values[3]);
+bool wolf_present_map_get_region_triplets(const wolf_loaded_present_map *entry, size_t x, size_t y, size_t region_width, size_t region_height, uint16_t triplets[][3], size_t triplet_capacity, size_t *triplet_count);
 
 #endif
