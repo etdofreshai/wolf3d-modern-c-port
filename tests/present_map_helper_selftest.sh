@@ -21,6 +21,7 @@ for expected in \
   "present map helper slot ok: 7" \
   "present map helper plane result ok: compressed=12 words=6" \
   "present map helper plane ok: count=6 first=200 last=205" \
+  "present map helper plane stats ok: count=6 nonzero=6 min=100 max=105" \
   "present map helper copy plane ok: count=6 first=200 last=205" \
   "present map helper row ok: length=3 left=203 right=205" \
   "present map helper copy row ok: length=3 left=203 right=205" \

@@ -2588,6 +2588,16 @@ bool wolf_present_map_get_plane_words(const wolf_loaded_present_map *entry, size
     return wolf_map_get_plane_words(&entry->map, plane_index, words, word_count);
 }
 
+bool wolf_present_map_get_plane_stats(const wolf_loaded_present_map *entry, size_t plane_index, wolf_map_plane_stats *stats)
+{
+    if (entry == NULL)
+    {
+        return false;
+    }
+
+    return wolf_map_get_plane_stats(&entry->map, plane_index, stats);
+}
+
 bool wolf_present_map_copy_plane_words(const wolf_loaded_present_map *entry, size_t plane_index, uint16_t *dest, size_t dest_capacity, size_t *word_count)
 {
     if (entry == NULL)

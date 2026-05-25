@@ -709,6 +709,7 @@ static int run_present_map_helper_self_test(void)
     wolf_loaded_present_map present_map;
     const wolf_map_plane_load_result *plane_result = NULL;
     const uint16_t *plane_words = NULL;
+    wolf_map_plane_stats plane_stats;
     const uint16_t *row_words = NULL;
     size_t slot_index = 0;
     size_t word_count = 0;
@@ -769,6 +770,21 @@ static int run_present_map_helper_self_test(void)
         return 1;
     }
     printf("present map helper plane ok: count=%zu first=%u last=%u\n", word_count, plane_words[0], plane_words[5]);
+
+    if (!wolf_present_map_get_plane_stats(&present_map, 1, &plane_stats)
+        || plane_stats.word_count != 6
+        || plane_stats.nonzero_count != 6
+        || plane_stats.min_value != 100
+        || plane_stats.max_value != 105)
+    {
+        fputs("present map helper plane-stats self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper plane stats ok: count=%zu nonzero=%zu min=%u max=%u\n",
+        plane_stats.word_count,
+        plane_stats.nonzero_count,
+        plane_stats.min_value,
+        plane_stats.max_value);
 
     if (!wolf_present_map_copy_plane_words(&present_map, 0, copied_plane_words, (sizeof(copied_plane_words) / sizeof(copied_plane_words[0])), &copied_word_count)
         || copied_word_count != 6

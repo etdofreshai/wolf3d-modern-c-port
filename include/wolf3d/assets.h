@@ -158,6 +158,7 @@ bool wolf_present_map_get_plane_table(const wolf_loaded_present_map *entry, wolf
 bool wolf_present_map_get_plane_header(const wolf_loaded_present_map *entry, size_t plane_index, const wolf_map_plane_header **header);
 bool wolf_present_map_get_plane_result(const wolf_loaded_present_map *entry, size_t plane_index, const wolf_map_plane_load_result **result);
 bool wolf_present_map_get_plane_words(const wolf_loaded_present_map *entry, size_t plane_index, const uint16_t **words, size_t *word_count);
+bool wolf_present_map_get_plane_stats(const wolf_loaded_present_map *entry, size_t plane_index, wolf_map_plane_stats *stats);
 bool wolf_present_map_copy_plane_words(const wolf_loaded_present_map *entry, size_t plane_index, uint16_t *dest, size_t dest_capacity, size_t *word_count);
 bool wolf_present_map_get_row(const wolf_loaded_present_map *entry, size_t plane_index, size_t y, const uint16_t **row_words, size_t *row_length);
 bool wolf_present_map_copy_row(const wolf_loaded_present_map *entry, size_t plane_index, size_t y, uint16_t *dest, size_t dest_capacity, size_t *row_length);
