@@ -1595,6 +1595,12 @@ int main(int argc, char **argv)
     size_t inspect_present_map_region_y = 0;
     size_t inspect_present_map_region_width = 0;
     size_t inspect_present_map_region_height = 0;
+    int inspect_present_map_region_triplets = 0;
+    size_t inspect_present_map_region_triplets_index = 0;
+    size_t inspect_present_map_region_triplets_x = 0;
+    size_t inspect_present_map_region_triplets_y = 0;
+    size_t inspect_present_map_region_triplets_width = 0;
+    size_t inspect_present_map_region_triplets_height = 0;
     int inspect_present_map_load_catalog = 0;
     size_t inspect_present_map_load_catalog_count = 0;
     int inspect_map_load_catalog = 0;
@@ -1688,6 +1694,7 @@ int main(int argc, char **argv)
     wolf_loaded_map loaded_map;
     uint16_t plane_words[64 * 64];
     uint16_t region_words[64 * 64];
+    uint16_t region_triplets[64 * 64][3];
 
     for (i = 1; i < argc; ++i)
     {
@@ -2034,6 +2041,54 @@ int main(int argc, char **argv)
             inspect_present_map_region_y = (size_t)parsed_y;
             inspect_present_map_region_width = (size_t)parsed_width;
             inspect_present_map_region_height = (size_t)parsed_height;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-region-triplets") == 0)
+        {
+            long parsed_map_index;
+            long parsed_x;
+            long parsed_y;
+            long parsed_width;
+            long parsed_height;
+            if ((i + 5) >= argc)
+            {
+                fputs("--inspect-present-map-region-triplets requires a present-map index, x, y, width, and height\n", stderr);
+                return 1;
+            }
+
+            if (!parse_non_negative_long(argv[++i], &parsed_map_index))
+            {
+                fputs("--inspect-present-map-region-triplets index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (!parse_non_negative_long(argv[++i], &parsed_x))
+            {
+                fputs("--inspect-present-map-region-triplets x must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (!parse_non_negative_long(argv[++i], &parsed_y))
+            {
+                fputs("--inspect-present-map-region-triplets y must be a non-negative integer\n", stderr);
+                return 1;
+            }
+            if (!parse_non_negative_long(argv[++i], &parsed_width) || parsed_width <= 0)
+            {
+                fputs("--inspect-present-map-region-triplets width must be a positive integer\n", stderr);
+                return 1;
+            }
+            if (!parse_non_negative_long(argv[++i], &parsed_height) || parsed_height <= 0)
+            {
+                fputs("--inspect-present-map-region-triplets height must be a positive integer\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_region_triplets = 1;
+            inspect_present_map_region_triplets_index = (size_t)parsed_map_index;
+            inspect_present_map_region_triplets_x = (size_t)parsed_x;
+            inspect_present_map_region_triplets_y = (size_t)parsed_y;
+            inspect_present_map_region_triplets_width = (size_t)parsed_width;
+            inspect_present_map_region_triplets_height = (size_t)parsed_height;
             continue;
         }
 
@@ -3330,6 +3385,69 @@ int main(int argc, char **argv)
             region_words[2],
             region_words[3]);
         (void)region_word_count;
+        return 0;
+    }
+
+    if (inspect_present_map_region_triplets)
+    {
+        wolf_loaded_present_map present_map;
+        size_t region_triplet_count = 0;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map(data_path,
+                inspect_present_map_region_triplets_index,
+                &present_map,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_map_get_region_triplets(&present_map.map,
+                inspect_present_map_region_triplets_x,
+                inspect_present_map_region_triplets_y,
+                inspect_present_map_region_triplets_width,
+                inspect_present_map_region_triplets_height,
+                region_triplets,
+                (sizeof(region_triplets) / sizeof(region_triplets[0])),
+                &region_triplet_count))
+        {
+            fputs("could not inspect present map region triplets\n", stderr);
+            return 1;
+        }
+
+        printf("present map%zu region%zu,%zu triplet size: %zux%zu\n",
+            inspect_present_map_region_triplets_index,
+            inspect_present_map_region_triplets_x,
+            inspect_present_map_region_triplets_y,
+            inspect_present_map_region_triplets_width,
+            inspect_present_map_region_triplets_height);
+        printf("present map%zu region%zu,%zu triplets: [0,0]=%u,%u,%u [1,0]=%u,%u,%u [0,1]=%u,%u,%u [1,1]=%u,%u,%u\n",
+            inspect_present_map_region_triplets_index,
+            inspect_present_map_region_triplets_x,
+            inspect_present_map_region_triplets_y,
+            region_triplets[0][0],
+            region_triplets[0][1],
+            region_triplets[0][2],
+            region_triplets[1][0],
+            region_triplets[1][1],
+            region_triplets[1][2],
+            region_triplets[2][0],
+            region_triplets[2][1],
+            region_triplets[2][2],
+            region_triplets[3][0],
+            region_triplets[3][1],
+            region_triplets[3][2]);
+        (void)region_triplet_count;
         return 0;
     }
 
