@@ -527,6 +527,70 @@ static int run_map_helper_self_test(void)
     return 0;
 }
 
+static int run_map_summary_helper_self_test(void)
+{
+    wolf_loaded_map map;
+    wolf_loaded_present_map present_map;
+    const wolf_map_summary *summary = NULL;
+
+    memset(&map, 0, sizeof(map));
+    map.summary.width = 4;
+    map.summary.height = 3;
+    map.summary.gamemaps_file_size = 2222;
+    memcpy(map.summary.name, "SummaryMap", sizeof("SummaryMap"));
+
+    if (!wolf_map_get_summary(&map, &summary)
+        || strcmp(summary->name, "SummaryMap") != 0
+        || summary->width != 4
+        || summary->height != 3
+        || summary->gamemaps_file_size != 2222)
+    {
+        fputs("map summary helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map summary helper ok: name=%s size=%ux%u file=%u\n",
+        summary->name,
+        summary->width,
+        summary->height,
+        summary->gamemaps_file_size);
+
+    if (wolf_map_get_summary(&map, NULL))
+    {
+        fputs("map summary helper null-output self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map summary helper null-output ok");
+
+    memset(&present_map, 0, sizeof(present_map));
+    present_map.slot_index = 9;
+    present_map.map.summary.width = 64;
+    present_map.map.summary.height = 64;
+    memcpy(present_map.map.summary.name, "PresentSummary", sizeof("PresentSummary"));
+
+    if (!wolf_present_map_get_summary(&present_map, &summary)
+        || strcmp(summary->name, "PresentSummary") != 0
+        || summary->width != 64
+        || summary->height != 64)
+    {
+        fputs("present map summary helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map summary helper ok: slot=%zu name=%s size=%ux%u\n",
+        present_map.slot_index,
+        summary->name,
+        summary->width,
+        summary->height);
+
+    if (wolf_present_map_get_summary(&present_map, NULL))
+    {
+        fputs("present map summary helper null-output self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map summary helper null-output ok");
+
+    return 0;
+}
+
 static int run_present_map_helper_self_test(void)
 {
     wolf_loaded_present_map present_map;
@@ -1369,6 +1433,7 @@ int main(int argc, char **argv)
     int self_test_map_plane_decode = 0;
     int self_test_map_plane_header_bytes = 0;
     int self_test_map_helpers = 0;
+    int self_test_map_summary_helpers = 0;
     int self_test_map_plane_header_helpers = 0;
     int self_test_map_plane_table_helpers = 0;
     int self_test_map_loaded_validation_helpers = 0;
@@ -2090,6 +2155,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-map-helpers") == 0)
         {
             self_test_map_helpers = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-summary-helpers") == 0)
+        {
+            self_test_map_summary_helpers = 1;
             continue;
         }
 
@@ -3842,6 +3913,11 @@ int main(int argc, char **argv)
     if (self_test_map_helpers)
     {
         return run_map_helper_self_test();
+    }
+
+    if (self_test_map_summary_helpers)
+    {
+        return run_map_summary_helper_self_test();
     }
 
     if (self_test_map_plane_header_helpers)
