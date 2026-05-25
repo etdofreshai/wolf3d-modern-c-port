@@ -1858,6 +1858,7 @@ bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_si
 {
     uint16_t *carmack_words;
     size_t carmack_word_count;
+    wolf_map_plane_load_result decoded_result;
     bool ok;
 
     if (error_buffer != NULL && error_buffer_size > 0)
@@ -1871,6 +1872,9 @@ bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_si
         return false;
     }
 
+    memset(result, 0, sizeof(*result));
+    memset(&decoded_result, 0, sizeof(decoded_result));
+
     if (compressed_size < 4)
     {
         set_error(error_buffer, error_buffer_size, "map plane is too small");
@@ -1882,15 +1886,15 @@ bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_si
         return false;
     }
 
-    result->compressed_bytes = (uint16_t)compressed_size;
-    result->carmack_expanded_bytes = read_u16_le(compressed_bytes);
-    if ((result->carmack_expanded_bytes % 2) != 0)
+    decoded_result.compressed_bytes = (uint16_t)compressed_size;
+    decoded_result.carmack_expanded_bytes = read_u16_le(compressed_bytes);
+    if ((decoded_result.carmack_expanded_bytes % 2) != 0)
     {
         set_error(error_buffer, error_buffer_size, "carmack-expanded size must be even");
         return false;
     }
 
-    carmack_word_count = (size_t)(result->carmack_expanded_bytes / 2);
+    carmack_word_count = (size_t)(decoded_result.carmack_expanded_bytes / 2);
     if (carmack_word_count == 0)
     {
         set_error(error_buffer, error_buffer_size, "carmack-expanded plane is empty");
@@ -1912,23 +1916,23 @@ bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_si
         return false;
     }
 
-    result->rlew_expanded_bytes = carmack_words[0];
-    if ((result->rlew_expanded_bytes % 2) != 0)
+    decoded_result.rlew_expanded_bytes = carmack_words[0];
+    if ((decoded_result.rlew_expanded_bytes % 2) != 0)
     {
         free(carmack_words);
         set_error(error_buffer, error_buffer_size, "RLEW-expanded size must be even");
         return false;
     }
 
-    result->decoded_words = (size_t)(result->rlew_expanded_bytes / 2);
-    if (result->decoded_words > dest_words)
+    decoded_result.decoded_words = (size_t)(decoded_result.rlew_expanded_bytes / 2);
+    if (decoded_result.decoded_words > dest_words)
     {
         free(carmack_words);
         set_error(error_buffer, error_buffer_size, "destination buffer is too small for map plane");
         return false;
     }
 
-    ok = wolf_rlew_expand_words(carmack_words + 1, carmack_word_count - 1, dest, result->decoded_words, rlew_tag);
+    ok = wolf_rlew_expand_words(carmack_words + 1, carmack_word_count - 1, dest, decoded_result.decoded_words, rlew_tag);
     free(carmack_words);
     if (!ok)
     {
@@ -1936,6 +1940,7 @@ bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_si
         return false;
     }
 
+    *result = decoded_result;
     return true;
 }
 

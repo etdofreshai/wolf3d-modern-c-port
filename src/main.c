@@ -229,6 +229,10 @@ static int run_map_plane_decode_self_test(void)
     }
     puts("map plane decode short dest ok");
 
+    result.compressed_bytes = 99;
+    result.carmack_expanded_bytes = 88;
+    result.rlew_expanded_bytes = 77;
+    result.decoded_words = 66;
     if (wolf_decode_map_plane(odd_carmack_size_plane,
             sizeof(odd_carmack_size_plane),
             0xabcd,
@@ -237,7 +241,11 @@ static int run_map_plane_decode_self_test(void)
             &result,
             error_buffer,
             sizeof(error_buffer))
-        || strcmp(error_buffer, "carmack-expanded size must be even") != 0)
+        || strcmp(error_buffer, "carmack-expanded size must be even") != 0
+        || result.compressed_bytes != 0
+        || result.carmack_expanded_bytes != 0
+        || result.rlew_expanded_bytes != 0
+        || result.decoded_words != 0)
     {
         fputs("map plane odd-carmack-size self-test failed\n", stderr);
         return 1;
