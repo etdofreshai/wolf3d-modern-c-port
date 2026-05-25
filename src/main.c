@@ -409,6 +409,9 @@ static int run_map_helper_self_test(void)
     const uint16_t *row_words = NULL;
     size_t word_count = 0;
     size_t row_length = 0;
+    uint16_t copied_row_words[4];
+    uint16_t short_copied_row_words[3];
+    size_t copied_row_length = 0;
     size_t index = 0;
     uint16_t column_words[64];
     size_t column_length = 0;
@@ -486,6 +489,23 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     printf("map helper row ok: length=%zu left=%u right=%u\n", row_length, row_words[0], row_words[3]);
+
+    if (!wolf_map_copy_row(&map, 1, 1, copied_row_words, (sizeof(copied_row_words) / sizeof(copied_row_words[0])), &copied_row_length)
+        || copied_row_length != 4
+        || copied_row_words[0] != 104
+        || copied_row_words[3] != 107)
+    {
+        fputs("map helper copy-row self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper copy row ok: length=%zu left=%u right=%u\n", copied_row_length, copied_row_words[0], copied_row_words[3]);
+
+    if (wolf_map_copy_row(&map, 1, 1, short_copied_row_words, (sizeof(short_copied_row_words) / sizeof(short_copied_row_words[0])), &copied_row_length))
+    {
+        fputs("map helper copy-row short-buffer self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper copy row short buffer ok");
 
     if (!wolf_map_get_column(&map, 1, 2, column_words, (sizeof(column_words) / sizeof(column_words[0])), &column_length)
         || column_length != 3
@@ -679,6 +699,9 @@ static int run_present_map_helper_self_test(void)
     size_t row_length = 0;
     uint16_t column_words[64];
     size_t column_length = 0;
+    uint16_t copied_row_words[3];
+    uint16_t short_copied_row_words[2];
+    size_t copied_row_length = 0;
     uint16_t copied_plane_words[6];
     uint16_t short_copied_plane_words[5];
     size_t copied_word_count = 0;
@@ -750,6 +773,23 @@ static int run_present_map_helper_self_test(void)
         return 1;
     }
     printf("present map helper row ok: length=%zu left=%u right=%u\n", row_length, row_words[0], row_words[2]);
+
+    if (!wolf_present_map_copy_row(&present_map, 0, 1, copied_row_words, (sizeof(copied_row_words) / sizeof(copied_row_words[0])), &copied_row_length)
+        || copied_row_length != 3
+        || copied_row_words[0] != 203
+        || copied_row_words[2] != 205)
+    {
+        fputs("present map helper copy-row self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper copy row ok: length=%zu left=%u right=%u\n", copied_row_length, copied_row_words[0], copied_row_words[2]);
+
+    if (wolf_present_map_copy_row(&present_map, 0, 1, short_copied_row_words, (sizeof(short_copied_row_words) / sizeof(short_copied_row_words[0])), &copied_row_length))
+    {
+        fputs("present map helper copy-row short-buffer self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map helper copy row short buffer ok");
 
     if (!wolf_present_map_get_column(&present_map, 0, 1, column_words, (sizeof(column_words) / sizeof(column_words[0])), &column_length)
         || column_length != 2

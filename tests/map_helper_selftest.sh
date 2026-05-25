@@ -23,6 +23,8 @@ for expected in \
   "map helper copy plane ok: count=12 first=100 last=111" \
   "map helper copy plane short buffer ok" \
   "map helper row ok: length=4 left=104 right=107" \
+  "map helper copy row ok: length=4 left=104 right=107" \
+  "map helper copy row short buffer ok" \
   "map helper column ok: count=3 top=102 bottom=110" \
   "map helper region ok: count=4 top-left=101 bottom-right=106" \
   "map helper cell ok: 107" \

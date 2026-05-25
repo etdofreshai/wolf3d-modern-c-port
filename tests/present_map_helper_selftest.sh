@@ -23,6 +23,8 @@ for expected in \
   "present map helper plane ok: count=6 first=200 last=205" \
   "present map helper copy plane ok: count=6 first=200 last=205" \
   "present map helper row ok: length=3 left=203 right=205" \
+  "present map helper copy row ok: length=3 left=203 right=205" \
+  "present map helper copy row short buffer ok" \
   "present map helper column ok: count=2 top=201 bottom=204" \
   "present map helper region ok: count=4 top-left=200 bottom-right=204" \
   "present map helper cell ok: 202" \

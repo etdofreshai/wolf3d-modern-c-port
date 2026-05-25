@@ -2287,6 +2287,31 @@ bool wolf_map_get_row(const wolf_loaded_map *map, size_t plane_index, size_t y, 
     return true;
 }
 
+bool wolf_map_copy_row(const wolf_loaded_map *map, size_t plane_index, size_t y, uint16_t *dest, size_t dest_capacity, size_t *row_length)
+{
+    const uint16_t *row_words;
+    size_t local_row_length;
+
+    if (dest == NULL || row_length == NULL)
+    {
+        return false;
+    }
+
+    if (!wolf_map_get_row(map, plane_index, y, &row_words, &local_row_length))
+    {
+        return false;
+    }
+
+    if (dest_capacity < local_row_length)
+    {
+        return false;
+    }
+
+    memcpy(dest, row_words, local_row_length * sizeof(uint16_t));
+    *row_length = local_row_length;
+    return true;
+}
+
 bool wolf_map_get_column(const wolf_loaded_map *map, size_t plane_index, size_t x, uint16_t *column_words, size_t column_capacity, size_t *column_length)
 {
     const uint16_t *words;
@@ -2540,6 +2565,16 @@ bool wolf_present_map_get_row(const wolf_loaded_present_map *entry, size_t plane
     }
 
     return wolf_map_get_row(&entry->map, plane_index, y, row_words, row_length);
+}
+
+bool wolf_present_map_copy_row(const wolf_loaded_present_map *entry, size_t plane_index, size_t y, uint16_t *dest, size_t dest_capacity, size_t *row_length)
+{
+    if (entry == NULL)
+    {
+        return false;
+    }
+
+    return wolf_map_copy_row(&entry->map, plane_index, y, dest, dest_capacity, row_length);
 }
 
 bool wolf_present_map_get_column(const wolf_loaded_present_map *entry, size_t plane_index, size_t x, uint16_t *column_words, size_t column_capacity, size_t *column_length)
