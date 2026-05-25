@@ -2393,6 +2393,26 @@ bool wolf_map_get_cell(const wolf_loaded_map *map, size_t plane_index, size_t x,
     return true;
 }
 
+bool wolf_map_get_cell_triplet(const wolf_loaded_map *map, size_t x, size_t y, uint16_t values[3])
+{
+    size_t plane_index;
+
+    if (map == NULL || values == NULL)
+    {
+        return false;
+    }
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        if (!wolf_map_get_cell(map, plane_index, x, y, &values[plane_index]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool wolf_present_map_get_slot_index(const wolf_loaded_present_map *entry, size_t *slot_index)
 {
     if (entry == NULL || slot_index == NULL)
@@ -2512,4 +2532,14 @@ bool wolf_present_map_get_cell(const wolf_loaded_present_map *entry, size_t plan
     }
 
     return wolf_map_get_cell(&entry->map, plane_index, x, y, value);
+}
+
+bool wolf_present_map_get_cell_triplet(const wolf_loaded_present_map *entry, size_t x, size_t y, uint16_t values[3])
+{
+    if (entry == NULL)
+    {
+        return false;
+    }
+
+    return wolf_map_get_cell_triplet(&entry->map, x, y, values);
 }

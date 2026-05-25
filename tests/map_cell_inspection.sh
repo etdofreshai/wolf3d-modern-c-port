@@ -22,7 +22,8 @@ CELL_32_OUTPUT="$($BIN --inspect-map-cell 1 32 32 --data "$VALID_DATA_DIR")"
 for expected in \
   "map1 cell[31,31] plane0: 120" \
   "map1 cell[31,31] plane1: 0" \
-  "map1 cell[31,31] plane2: 0"; do
+  "map1 cell[31,31] plane2: 0" \
+  "map1 cell[31,31] triplet: 120,0,0"; do
   if [[ "$CELL_31_OUTPUT" != *"$expected"* ]]; then
     echo "missing expected cell output: $expected"
     echo "got: $CELL_31_OUTPUT"
@@ -33,7 +34,8 @@ done
 for expected in \
   "map1 cell[32,32] plane0: 1" \
   "map1 cell[32,32] plane1: 0" \
-  "map1 cell[32,32] plane2: 0"; do
+  "map1 cell[32,32] plane2: 0" \
+  "map1 cell[32,32] triplet: 1,0,0"; do
   if [[ "$CELL_32_OUTPUT" != *"$expected"* ]]; then
     echo "missing expected cell output: $expected"
     echo "got: $CELL_32_OUTPUT"

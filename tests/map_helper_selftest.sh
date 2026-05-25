@@ -26,9 +26,11 @@ for expected in \
   "map helper column ok: count=3 top=102 bottom=110" \
   "map helper region ok: count=4 top-left=101 bottom-right=106" \
   "map helper cell ok: 107" \
+  "map helper cell triplet ok: 7,107,207" \
   "map helper oob index ok" \
   "map helper oob row ok" \
   "map helper oob cell ok" \
+  "map helper oob cell triplet ok" \
   "map helper invalid plane ok" \
   "map helper invalid plane result ok" \
   "map helper invalid region ok"; do

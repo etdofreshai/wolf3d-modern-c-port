@@ -417,6 +417,7 @@ static int run_map_helper_self_test(void)
     uint16_t region_words[12];
     size_t region_word_count = 0;
     uint16_t cell_value = 0;
+    uint16_t cell_triplet[3];
     size_t i;
 
     memset(&map, 0, sizeof(map));
@@ -426,7 +427,9 @@ static int run_map_helper_self_test(void)
 
     for (i = 0; i < 12; ++i)
     {
+        map.plane_words[0][i] = (uint16_t)i;
         map.plane_words[1][i] = (uint16_t)(100 + i);
+        map.plane_words[2][i] = (uint16_t)(200 + i);
     }
 
     if (!wolf_map_cell_index(&map.summary, 3, 2, &index) || index != 11)
@@ -509,6 +512,16 @@ static int run_map_helper_self_test(void)
     }
     printf("map helper cell ok: %u\n", cell_value);
 
+    if (!wolf_map_get_cell_triplet(&map, 3, 1, cell_triplet)
+        || cell_triplet[0] != 7
+        || cell_triplet[1] != 107
+        || cell_triplet[2] != 207)
+    {
+        fputs("map helper cell-triplet self-test failed\n", stderr);
+        return 1;
+    }
+    printf("map helper cell triplet ok: %u,%u,%u\n", cell_triplet[0], cell_triplet[1], cell_triplet[2]);
+
     if (wolf_map_cell_index(&map.summary, 4, 0, &index))
     {
         fputs("map helper out-of-bounds index self-test failed\n", stderr);
@@ -529,6 +542,13 @@ static int run_map_helper_self_test(void)
         return 1;
     }
     puts("map helper oob cell ok");
+
+    if (wolf_map_get_cell_triplet(&map, 0, 3, cell_triplet))
+    {
+        fputs("map helper out-of-bounds cell-triplet self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map helper oob cell triplet ok");
 
     if (wolf_map_get_plane_words(&map, 3, &plane_words, &word_count))
     {
@@ -635,6 +655,7 @@ static int run_present_map_helper_self_test(void)
     uint16_t region_words[12];
     size_t region_word_count = 0;
     uint16_t cell_value = 0;
+    uint16_t cell_triplet[3];
     size_t i;
 
     memset(&present_map, 0, sizeof(present_map));
@@ -648,6 +669,8 @@ static int run_present_map_helper_self_test(void)
     for (i = 0; i < 6; ++i)
     {
         present_map.map.plane_words[0][i] = (uint16_t)(200 + i);
+        present_map.map.plane_words[1][i] = (uint16_t)(100 + i);
+        present_map.map.plane_words[2][i] = (uint16_t)(300 + i);
     }
 
     if (!wolf_present_map_get_slot_index(&present_map, &slot_index) || slot_index != 7)
@@ -722,6 +745,16 @@ static int run_present_map_helper_self_test(void)
         return 1;
     }
     printf("present map helper cell ok: %u\n", cell_value);
+
+    if (!wolf_present_map_get_cell_triplet(&present_map, 2, 0, cell_triplet)
+        || cell_triplet[0] != 202
+        || cell_triplet[1] != 102
+        || cell_triplet[2] != 302)
+    {
+        fputs("present map helper cell-triplet self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present map helper cell triplet ok: %u,%u,%u\n", cell_triplet[0], cell_triplet[1], cell_triplet[2]);
 
     if (wolf_present_map_get_plane_words(&present_map, 3, &plane_words, &word_count))
     {
@@ -4121,9 +4154,7 @@ int main(int argc, char **argv)
 
     if (inspect_map_cell)
     {
-        uint16_t plane0_value;
-        uint16_t plane1_value;
-        uint16_t plane2_value;
+        uint16_t cell_values[3];
 
         if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
         {
@@ -4139,17 +4170,16 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        if (!wolf_map_get_cell(&loaded_map, 0, inspect_map_cell_x, inspect_map_cell_y, &plane0_value)
-            || !wolf_map_get_cell(&loaded_map, 1, inspect_map_cell_x, inspect_map_cell_y, &plane1_value)
-            || !wolf_map_get_cell(&loaded_map, 2, inspect_map_cell_x, inspect_map_cell_y, &plane2_value))
+        if (!wolf_map_get_cell_triplet(&loaded_map, inspect_map_cell_x, inspect_map_cell_y, cell_values))
         {
             fprintf(stderr, "map cell is out of bounds: %zux%zu\n", inspect_map_cell_x, inspect_map_cell_y);
             return 1;
         }
 
-        printf("map%zu cell[%zu,%zu] plane0: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane0_value);
-        printf("map%zu cell[%zu,%zu] plane1: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane1_value);
-        printf("map%zu cell[%zu,%zu] plane2: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, plane2_value);
+        printf("map%zu cell[%zu,%zu] plane0: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, cell_values[0]);
+        printf("map%zu cell[%zu,%zu] plane1: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, cell_values[1]);
+        printf("map%zu cell[%zu,%zu] plane2: %u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, cell_values[2]);
+        printf("map%zu cell[%zu,%zu] triplet: %u,%u,%u\n", inspect_map_cell_map_index, inspect_map_cell_x, inspect_map_cell_y, cell_values[0], cell_values[1], cell_values[2]);
         return 0;
     }
 

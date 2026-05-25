@@ -26,6 +26,7 @@ for expected in \
   "present map helper column ok: count=2 top=201 bottom=204" \
   "present map helper region ok: count=4 top-left=200 bottom-right=204" \
   "present map helper cell ok: 202" \
+  "present map helper cell triplet ok: 202,102,302" \
   "present map helper invalid plane ok" \
   "present map helper short copy ok" \
   "present map helper invalid row ok" \
