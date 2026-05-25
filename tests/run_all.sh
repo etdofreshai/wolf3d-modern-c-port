@@ -42,6 +42,9 @@ fi
 if [[ -x "$ROOT/tests/map_validation_selftest.sh" ]]; then
   "$ROOT/tests/map_validation_selftest.sh"
 fi
+if [[ -x "$ROOT/tests/map_loaded_validation_helper_selftest.sh" ]]; then
+  "$ROOT/tests/map_loaded_validation_helper_selftest.sh"
+fi
 if [[ -x "$ROOT/tests/map_plane_decoding.sh" ]]; then
   "$ROOT/tests/map_plane_decoding.sh"
 fi

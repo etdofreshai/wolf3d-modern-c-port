@@ -618,6 +618,97 @@ static int run_present_map_helper_self_test(void)
     return 0;
 }
 
+static int run_map_loaded_validation_helper_self_test(void)
+{
+    wolf_loaded_map map;
+    wolf_loaded_present_map present_map;
+    size_t plane_index;
+
+    memset(&map, 0, sizeof(map));
+    map.summary.plane_offsets[0] = 11;
+    map.summary.plane_offsets[1] = 31;
+    map.summary.plane_offsets[2] = 51;
+    map.summary.plane_lengths[0] = 20;
+    map.summary.plane_lengths[1] = 20;
+    map.summary.plane_lengths[2] = 20;
+    map.summary.width = 3;
+    map.summary.height = 4;
+    memcpy(map.summary.name, "LoadedMap", sizeof("LoadedMap"));
+    map.summary.gamemaps_file_size = 80;
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        map.plane_headers[plane_index].offset = map.summary.plane_offsets[plane_index];
+        map.plane_headers[plane_index].length = map.summary.plane_lengths[plane_index];
+        map.plane_headers[plane_index].carmack_expanded_bytes = 16;
+        map.plane_headers[plane_index].rlew_expanded_bytes = 24;
+        map.plane_headers[plane_index].decoded_words = 12;
+        map.plane_results[plane_index].compressed_bytes = map.summary.plane_lengths[plane_index];
+        map.plane_results[plane_index].carmack_expanded_bytes = 16;
+        map.plane_results[plane_index].rlew_expanded_bytes = 24;
+        map.plane_results[plane_index].decoded_words = 12;
+    }
+
+    if (!wolf_loaded_map_is_valid(&map))
+    {
+        fputs("loaded map validation helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("loaded map validation helper ok: name=%s plane2 words=%zu\n", map.summary.name, map.plane_results[2].decoded_words);
+
+    map.plane_results[2].decoded_words = 11;
+    if (wolf_loaded_map_is_valid(&map))
+    {
+        fputs("loaded map validation mismatch self-test failed\n", stderr);
+        return 1;
+    }
+    puts("loaded map validation mismatch ok");
+
+    memset(&present_map, 0, sizeof(present_map));
+    present_map.slot_index = 9;
+    present_map.map.summary.plane_offsets[0] = 5;
+    present_map.map.summary.plane_offsets[1] = 25;
+    present_map.map.summary.plane_offsets[2] = 45;
+    present_map.map.summary.plane_lengths[0] = 20;
+    present_map.map.summary.plane_lengths[1] = 20;
+    present_map.map.summary.plane_lengths[2] = 20;
+    present_map.map.summary.width = 2;
+    present_map.map.summary.height = 3;
+    memcpy(present_map.map.summary.name, "PresentLoaded", sizeof("PresentLoaded"));
+    present_map.map.summary.gamemaps_file_size = 70;
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        present_map.map.plane_headers[plane_index].offset = present_map.map.summary.plane_offsets[plane_index];
+        present_map.map.plane_headers[plane_index].length = present_map.map.summary.plane_lengths[plane_index];
+        present_map.map.plane_headers[plane_index].carmack_expanded_bytes = 14;
+        present_map.map.plane_headers[plane_index].rlew_expanded_bytes = 12;
+        present_map.map.plane_headers[plane_index].decoded_words = 6;
+        present_map.map.plane_results[plane_index].compressed_bytes = present_map.map.summary.plane_lengths[plane_index];
+        present_map.map.plane_results[plane_index].carmack_expanded_bytes = 14;
+        present_map.map.plane_results[plane_index].rlew_expanded_bytes = 12;
+        present_map.map.plane_results[plane_index].decoded_words = 6;
+    }
+
+    if (!wolf_loaded_present_map_is_valid(&present_map))
+    {
+        fputs("present loaded map validation helper self-test failed\n", stderr);
+        return 1;
+    }
+    printf("present loaded map validation helper ok: slot=%zu name=%s plane1 compressed=%u\n",
+        present_map.slot_index,
+        present_map.map.summary.name,
+        present_map.map.plane_results[1].compressed_bytes);
+
+    present_map.map.plane_headers[1].length = 18;
+    if (wolf_loaded_present_map_is_valid(&present_map))
+    {
+        fputs("present loaded map validation mismatch self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present loaded map validation mismatch ok");
+
+    return 0;
+}
+
 static void print_loaded_map_plane_table_summary(const char *label_prefix, const wolf_loaded_map *map)
 {
     wolf_map_plane_table table;
@@ -1262,6 +1353,7 @@ int main(int argc, char **argv)
     int self_test_map_helpers = 0;
     int self_test_map_plane_header_helpers = 0;
     int self_test_map_plane_table_helpers = 0;
+    int self_test_map_loaded_validation_helpers = 0;
     int self_test_present_map_helpers = 0;
     int self_test_map_validation = 0;
     int inspect_first_map_plane = 0;
@@ -2016,6 +2108,12 @@ int main(int argc, char **argv)
         if (strcmp(argv[i], "--self-test-map-plane-table-helpers") == 0)
         {
             self_test_map_plane_table_helpers = 1;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--self-test-map-loaded-validation-helpers") == 0)
+        {
+            self_test_map_loaded_validation_helpers = 1;
             continue;
         }
 
@@ -3760,6 +3858,11 @@ int main(int argc, char **argv)
     if (self_test_map_plane_table_helpers)
     {
         return run_map_plane_table_helper_self_test();
+    }
+
+    if (self_test_map_loaded_validation_helpers)
+    {
+        return run_map_loaded_validation_helper_self_test();
     }
 
     if (self_test_present_map_helpers)

@@ -885,7 +885,6 @@ bool wolf_validate_map_load(const char *data_dir, size_t map_index, wolf_loaded_
 {
     wolf_loaded_map local_map;
     wolf_map_plane_header local_headers[3];
-    size_t plane_index;
 
     if (error_buffer != NULL && error_buffer_size > 0)
     {
@@ -913,13 +912,11 @@ bool wolf_validate_map_load(const char *data_dir, size_t map_index, wolf_loaded_
         return false;
     }
 
-    for (plane_index = 0; plane_index < 3; ++plane_index)
+    memcpy(local_map.plane_headers, local_headers, sizeof(local_headers));
+    if (!wolf_loaded_map_is_valid(&local_map))
     {
-        if (!wolf_map_plane_load_result_matches_header(&local_headers[plane_index], &local_map.plane_results[plane_index]))
-        {
-            set_error(error_buffer, error_buffer_size, "loaded map does not match plane headers");
-            return false;
-        }
+        set_error(error_buffer, error_buffer_size, "loaded map does not match plane headers");
+        return false;
     }
 
     if (map != NULL)
@@ -1002,7 +999,6 @@ bool wolf_validate_present_map_load(const char *data_dir, size_t present_index, 
     wolf_loaded_present_map local_entry;
     wolf_map_plane_header local_headers[3];
     wolf_map_presence_summary local_presence_summary;
-    size_t plane_index;
 
     if (error_buffer != NULL && error_buffer_size > 0)
     {
@@ -1030,13 +1026,11 @@ bool wolf_validate_present_map_load(const char *data_dir, size_t present_index, 
         return false;
     }
 
-    for (plane_index = 0; plane_index < 3; ++plane_index)
+    memcpy(local_entry.map.plane_headers, local_headers, sizeof(local_headers));
+    if (!wolf_loaded_present_map_is_valid(&local_entry))
     {
-        if (!wolf_map_plane_load_result_matches_header(&local_headers[plane_index], &local_entry.map.plane_results[plane_index]))
-        {
-            set_error(error_buffer, error_buffer_size, "loaded present map does not match plane headers");
-            return false;
-        }
+        set_error(error_buffer, error_buffer_size, "loaded present map does not match plane headers");
+        return false;
     }
 
     if (entry != NULL)
@@ -2082,6 +2076,36 @@ bool wolf_load_map(const char *data_dir, size_t map_index, wolf_loaded_map *map,
 bool wolf_load_first_map(const char *data_dir, wolf_loaded_map *map, char *error_buffer, size_t error_buffer_size)
 {
     return wolf_load_map(data_dir, 0, map, error_buffer, error_buffer_size);
+}
+
+bool wolf_loaded_map_is_valid(const wolf_loaded_map *map)
+{
+    size_t plane_index;
+
+    if (map == NULL || !wolf_map_plane_headers_are_valid(&map->summary, map->plane_headers))
+    {
+        return false;
+    }
+
+    for (plane_index = 0; plane_index < 3; ++plane_index)
+    {
+        if (!wolf_map_plane_load_result_matches_header(&map->plane_headers[plane_index], &map->plane_results[plane_index]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool wolf_loaded_present_map_is_valid(const wolf_loaded_present_map *entry)
+{
+    if (entry == NULL)
+    {
+        return false;
+    }
+
+    return wolf_loaded_map_is_valid(&entry->map);
 }
 
 bool wolf_map_cell_index(const wolf_map_summary *summary, size_t x, size_t y, size_t *index)
