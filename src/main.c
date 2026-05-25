@@ -1608,6 +1608,9 @@ int main(int argc, char **argv)
     int inspect_present_map_load_result = 0;
     size_t inspect_present_map_load_result_index = 0;
     size_t inspect_present_map_load_result_plane_index = 0;
+    int inspect_present_map_plane_stats = 0;
+    size_t inspect_present_map_plane_stats_index = 0;
+    size_t inspect_present_map_plane_stats_plane_index = 0;
     int inspect_present_map_cell = 0;
     size_t inspect_present_map_cell_index = 0;
     size_t inspect_present_map_cell_x = 0;
@@ -1916,6 +1919,34 @@ int main(int argc, char **argv)
             inspect_present_map_load_result = 1;
             inspect_present_map_load_result_index = (size_t)parsed_index;
             inspect_present_map_load_result_plane_index = (size_t)parsed_plane_index;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--inspect-present-map-plane-stats") == 0)
+        {
+            long parsed_index;
+            long parsed_plane_index;
+            if ((i + 2) >= argc)
+            {
+                fputs("--inspect-present-map-plane-stats requires an index and plane index\n", stderr);
+                return 1;
+            }
+
+            if (!parse_non_negative_long(argv[++i], &parsed_index))
+            {
+                fputs("--inspect-present-map-plane-stats index must be a non-negative integer\n", stderr);
+                return 1;
+            }
+
+            if (!parse_non_negative_long(argv[++i], &parsed_plane_index) || parsed_plane_index > 2)
+            {
+                fputs("--inspect-present-map-plane-stats plane index must be 0, 1, or 2\n", stderr);
+                return 1;
+            }
+
+            inspect_present_map_plane_stats = 1;
+            inspect_present_map_plane_stats_index = (size_t)parsed_index;
+            inspect_present_map_plane_stats_plane_index = (size_t)parsed_plane_index;
             continue;
         }
 
@@ -3545,6 +3576,58 @@ int main(int argc, char **argv)
             return 1;
         }
 
+        return 0;
+    }
+
+    if (inspect_present_map_plane_stats)
+    {
+        wolf_loaded_present_map present_map;
+        wolf_map_plane_stats stats;
+
+        if (!wolf_is_valid_data_dir(data_path, error_buffer, sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_load_present_map(data_path,
+                inspect_present_map_plane_stats_index,
+                &present_map,
+                &map_presence_summary,
+                error_buffer,
+                sizeof(error_buffer)))
+        {
+            fputs(error_buffer, stderr);
+            fputc('\n', stderr);
+            return 1;
+        }
+
+        if (!wolf_present_map_get_plane_stats(&present_map, inspect_present_map_plane_stats_plane_index, &stats))
+        {
+            fprintf(stderr,
+                "present map plane stats are out of bounds: index=%zu plane=%zu\n",
+                inspect_present_map_plane_stats_index,
+                inspect_present_map_plane_stats_plane_index);
+            return 1;
+        }
+
+        printf("present map%zu plane%zu stats words: %zu\n",
+            inspect_present_map_plane_stats_index,
+            inspect_present_map_plane_stats_plane_index,
+            stats.word_count);
+        printf("present map%zu plane%zu stats nonzero: %zu\n",
+            inspect_present_map_plane_stats_index,
+            inspect_present_map_plane_stats_plane_index,
+            stats.nonzero_count);
+        printf("present map%zu plane%zu stats min: %u\n",
+            inspect_present_map_plane_stats_index,
+            inspect_present_map_plane_stats_plane_index,
+            stats.min_value);
+        printf("present map%zu plane%zu stats max: %u\n",
+            inspect_present_map_plane_stats_index,
+            inspect_present_map_plane_stats_plane_index,
+            stats.max_value);
         return 0;
     }
 
