@@ -1876,6 +1876,11 @@ bool wolf_decode_map_plane(const uint8_t *compressed_bytes, size_t compressed_si
         set_error(error_buffer, error_buffer_size, "map plane is too small");
         return false;
     }
+    if (compressed_size > UINT16_MAX)
+    {
+        set_error(error_buffer, error_buffer_size, "compressed map plane is too large");
+        return false;
+    }
 
     result->compressed_bytes = (uint16_t)compressed_size;
     result->carmack_expanded_bytes = read_u16_le(compressed_bytes);

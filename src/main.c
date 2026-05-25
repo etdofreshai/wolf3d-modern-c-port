@@ -179,6 +179,7 @@ static int run_map_plane_decode_self_test(void)
         0x08, 0x00,
         0x01, 0x00,
         0x02, 0x00};
+    uint8_t oversized_compressed_plane[65536];
     uint16_t decoded[8];
     wolf_map_plane_load_result result;
     char error_buffer[256];
@@ -242,6 +243,23 @@ static int run_map_plane_decode_self_test(void)
         return 1;
     }
     puts("map plane decode odd carmack size ok");
+
+    memset(oversized_compressed_plane, 0, sizeof(oversized_compressed_plane));
+    oversized_compressed_plane[0] = 0x02;
+    if (wolf_decode_map_plane(oversized_compressed_plane,
+            sizeof(oversized_compressed_plane),
+            0xabcd,
+            decoded,
+            (sizeof(decoded) / sizeof(decoded[0])),
+            &result,
+            error_buffer,
+            sizeof(error_buffer))
+        || strcmp(error_buffer, "compressed map plane is too large") != 0)
+    {
+        fputs("map plane oversized-compressed-size self-test failed\n", stderr);
+        return 1;
+    }
+    puts("map plane decode oversized compressed size ok");
 
     return 0;
 }
