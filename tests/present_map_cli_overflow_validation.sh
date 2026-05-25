@@ -22,6 +22,12 @@ LOAD_OUTPUT="$($BIN --inspect-present-map-load "$OVERFLOW_VALUE" --data "$VALID_
 LOAD_STATUS=$?
 COLUMN_OUTPUT="$($BIN --inspect-present-map-column 2 0 "$OVERFLOW_VALUE" --data "$VALID_DATA_DIR" 2>&1)"
 COLUMN_STATUS=$?
+CELL_OUTPUT="$($BIN --inspect-present-map-cell "$OVERFLOW_VALUE" 31 31 --data "$VALID_DATA_DIR" 2>&1)"
+CELL_STATUS=$?
+ROW_OUTPUT="$($BIN --inspect-present-map-row 2 0 "$OVERFLOW_VALUE" --data "$VALID_DATA_DIR" 2>&1)"
+ROW_STATUS=$?
+REGION_OUTPUT="$($BIN --inspect-present-map-region 2 0 31 31 "$OVERFLOW_VALUE" 2 --data "$VALID_DATA_DIR" 2>&1)"
+REGION_STATUS=$?
 set -e
 
 if [[ $LOAD_STATUS -eq 0 ]]; then
@@ -30,6 +36,18 @@ if [[ $LOAD_STATUS -eq 0 ]]; then
 fi
 if [[ $COLUMN_STATUS -eq 0 ]]; then
   echo "expected present-map column overflow parse to fail"
+  exit 1
+fi
+if [[ $CELL_STATUS -eq 0 ]]; then
+  echo "expected present-map cell overflow parse to fail"
+  exit 1
+fi
+if [[ $ROW_STATUS -eq 0 ]]; then
+  echo "expected present-map row overflow parse to fail"
+  exit 1
+fi
+if [[ $REGION_STATUS -eq 0 ]]; then
+  echo "expected present-map region overflow parse to fail"
   exit 1
 fi
 
@@ -42,6 +60,24 @@ fi
 if [[ "$COLUMN_OUTPUT" != *"--inspect-present-map-column x must be a non-negative integer"* ]]; then
   echo "missing expected present-map column overflow message"
   echo "got: $COLUMN_OUTPUT"
+  exit 1
+fi
+
+if [[ "$CELL_OUTPUT" != *"--inspect-present-map-cell index must be a non-negative integer"* ]]; then
+  echo "missing expected present-map cell overflow message"
+  echo "got: $CELL_OUTPUT"
+  exit 1
+fi
+
+if [[ "$ROW_OUTPUT" != *"--inspect-present-map-row y must be a non-negative integer"* ]]; then
+  echo "missing expected present-map row overflow message"
+  echo "got: $ROW_OUTPUT"
+  exit 1
+fi
+
+if [[ "$REGION_OUTPUT" != *"--inspect-present-map-region width must be a positive integer"* ]]; then
+  echo "missing expected present-map region overflow message"
+  echo "got: $REGION_OUTPUT"
   exit 1
 fi
 

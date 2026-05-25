@@ -1605,9 +1605,6 @@ int main(int argc, char **argv)
 
         if (strcmp(argv[i], "--inspect-present-map-cell") == 0)
         {
-            char *map_end = NULL;
-            char *x_end = NULL;
-            char *y_end = NULL;
             long parsed_map_index;
             long parsed_x;
             long parsed_y;
@@ -1617,20 +1614,17 @@ int main(int argc, char **argv)
                 return 1;
             }
 
-            parsed_map_index = strtol(argv[++i], &map_end, 10);
-            parsed_x = strtol(argv[++i], &x_end, 10);
-            parsed_y = strtol(argv[++i], &y_end, 10);
-            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_map_index))
             {
                 fputs("--inspect-present-map-cell index must be a non-negative integer\n", stderr);
                 return 1;
             }
-            if (x_end == argv[i - 1] || *x_end != '\0' || parsed_x < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_x))
             {
                 fputs("--inspect-present-map-cell x must be a non-negative integer\n", stderr);
                 return 1;
             }
-            if (y_end == argv[i] || *y_end != '\0' || parsed_y < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_y))
             {
                 fputs("--inspect-present-map-cell y must be a non-negative integer\n", stderr);
                 return 1;
@@ -1645,9 +1639,6 @@ int main(int argc, char **argv)
 
         if (strcmp(argv[i], "--inspect-present-map-row") == 0)
         {
-            char *map_end = NULL;
-            char *plane_end = NULL;
-            char *y_end = NULL;
             long parsed_map_index;
             long parsed_plane_index;
             long parsed_y;
@@ -1657,20 +1648,17 @@ int main(int argc, char **argv)
                 return 1;
             }
 
-            parsed_map_index = strtol(argv[++i], &map_end, 10);
-            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
-            parsed_y = strtol(argv[++i], &y_end, 10);
-            if (map_end == argv[i - 2] || *map_end != '\0' || parsed_map_index < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_map_index))
             {
                 fputs("--inspect-present-map-row index must be a non-negative integer\n", stderr);
                 return 1;
             }
-            if (plane_end == argv[i - 1] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            if (!parse_non_negative_long(argv[++i], &parsed_plane_index) || parsed_plane_index > 2)
             {
                 fputs("--inspect-present-map-row plane index must be 0, 1, or 2\n", stderr);
                 return 1;
             }
-            if (y_end == argv[i] || *y_end != '\0' || parsed_y < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_y))
             {
                 fputs("--inspect-present-map-row y must be a non-negative integer\n", stderr);
                 return 1;
@@ -1719,12 +1707,6 @@ int main(int argc, char **argv)
 
         if (strcmp(argv[i], "--inspect-present-map-region") == 0)
         {
-            char *map_end = NULL;
-            char *plane_end = NULL;
-            char *x_end = NULL;
-            char *y_end = NULL;
-            char *width_end = NULL;
-            char *height_end = NULL;
             long parsed_map_index;
             long parsed_plane_index;
             long parsed_x;
@@ -1737,38 +1719,32 @@ int main(int argc, char **argv)
                 return 1;
             }
 
-            parsed_map_index = strtol(argv[++i], &map_end, 10);
-            parsed_plane_index = strtol(argv[++i], &plane_end, 10);
-            parsed_x = strtol(argv[++i], &x_end, 10);
-            parsed_y = strtol(argv[++i], &y_end, 10);
-            parsed_width = strtol(argv[++i], &width_end, 10);
-            parsed_height = strtol(argv[++i], &height_end, 10);
-            if (map_end == argv[i - 5] || *map_end != '\0' || parsed_map_index < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_map_index))
             {
                 fputs("--inspect-present-map-region index must be a non-negative integer\n", stderr);
                 return 1;
             }
-            if (plane_end == argv[i - 4] || *plane_end != '\0' || parsed_plane_index < 0 || parsed_plane_index > 2)
+            if (!parse_non_negative_long(argv[++i], &parsed_plane_index) || parsed_plane_index > 2)
             {
                 fputs("--inspect-present-map-region plane index must be 0, 1, or 2\n", stderr);
                 return 1;
             }
-            if (x_end == argv[i - 3] || *x_end != '\0' || parsed_x < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_x))
             {
                 fputs("--inspect-present-map-region x must be a non-negative integer\n", stderr);
                 return 1;
             }
-            if (y_end == argv[i - 2] || *y_end != '\0' || parsed_y < 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_y))
             {
                 fputs("--inspect-present-map-region y must be a non-negative integer\n", stderr);
                 return 1;
             }
-            if (width_end == argv[i - 1] || *width_end != '\0' || parsed_width <= 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_width) || parsed_width <= 0)
             {
                 fputs("--inspect-present-map-region width must be a positive integer\n", stderr);
                 return 1;
             }
-            if (height_end == argv[i] || *height_end != '\0' || parsed_height <= 0)
+            if (!parse_non_negative_long(argv[++i], &parsed_height) || parsed_height <= 0)
             {
                 fputs("--inspect-present-map-region height must be a positive integer\n", stderr);
                 return 1;
