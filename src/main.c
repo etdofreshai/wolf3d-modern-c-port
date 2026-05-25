@@ -630,6 +630,7 @@ static int run_present_map_helper_self_test(void)
     uint16_t column_words[64];
     size_t column_length = 0;
     uint16_t copied_plane_words[6];
+    uint16_t short_copied_plane_words[5];
     size_t copied_word_count = 0;
     uint16_t region_words[12];
     size_t region_word_count = 0;
@@ -728,6 +729,27 @@ static int run_present_map_helper_self_test(void)
         return 1;
     }
     puts("present map helper invalid plane ok");
+
+    if (wolf_present_map_copy_plane_words(&present_map, 0, short_copied_plane_words, (sizeof(short_copied_plane_words) / sizeof(short_copied_plane_words[0])), &copied_word_count))
+    {
+        fputs("present map helper short-copy self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map helper short copy ok");
+
+    if (wolf_present_map_get_row(&present_map, 0, 2, &row_words, &row_length))
+    {
+        fputs("present map helper invalid-row self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map helper invalid row ok");
+
+    if (wolf_present_map_get_region(&present_map, 0, 2, 1, 2, 1, region_words, (sizeof(region_words) / sizeof(region_words[0])), &region_word_count))
+    {
+        fputs("present map helper invalid-region self-test failed\n", stderr);
+        return 1;
+    }
+    puts("present map helper invalid region ok");
 
     if (wolf_present_map_get_cell(&present_map, 0, 3, 0, &cell_value))
     {
